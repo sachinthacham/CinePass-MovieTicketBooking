@@ -2,6 +2,7 @@
 using System.Text.Json;
 using FluentValidation;
 using MovieBooking.Application.Common.Responses;
+using MovieBooking.Domain.Exceptions;
 
 namespace MovieBooking.Api.Middlewares;
 
@@ -42,6 +43,22 @@ public class ExceptionMiddleware
                 response = ApiResponse<string>.FailureResponse(
                     "Validation failed",
                     validationException.Errors.Select(e => e.ErrorMessage).ToList());
+                break;
+
+            case EntityNotFoundException:
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                response = ApiResponse<string>.FailureResponse(exception.Message);
+                break;
+
+            case ForbiddenOperationException:
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                response = ApiResponse<string>.FailureResponse(exception.Message);
+                break;
+
+            case SeatUnavailableException:
+            case InvalidBookingStateException:
+                context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+                response = ApiResponse<string>.FailureResponse(exception.Message);
                 break;
 
             case UnauthorizedAccessException:
