@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Entities;
 using MovieBooking.Domain.Enums;
+using MovieBooking.Domain.Exceptions;
 using MovieBooking.Infrastructure.Data;
 
 namespace MovieBooking.Infrastructure.Repositories;
@@ -34,13 +35,30 @@ public class ShowtimeSeatRepository : IShowtimeSeatRepository
     public async Task UpdateAsync(ShowtimeSeat seat)
     {
         _context.ShowtimeSeats.Update(seat);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Another request already changed this seat's status since it was read —
+            // e.g. someone else locked/booked it first. Surface as a domain-level
+            // conflict instead of leaking an EF Core exception type into Application.
+            throw new SeatUnavailableException($"Seat {seat.SeatId} was just modified by another request.");
+        }
     }
 
     public async Task UpdateRangeAsync(IEnumerable<ShowtimeSeat> seats)
     {
         _context.ShowtimeSeats.UpdateRange(seats);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new SeatUnavailableException("One or more selected seats were just taken by another request. Please choose different seats.");
+        }
     }
 
     public async Task<List<ShowtimeSeat>> GetByIdsAsync(IEnumerable<Guid> ids)
