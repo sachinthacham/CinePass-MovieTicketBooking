@@ -1,16 +1,19 @@
 using MediatR;
 using MovieBooking.Application.Features.Auth.Commands;
 using MovieBooking.Application.Interfaces;
+using MovieBooking.Domain.Exceptions;
 
 namespace MovieBooking.Application.Features.Auth.Handlers;
 
 public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, bool>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public ResetPasswordHandler(IUserRepository userRepository)
+    public ResetPasswordHandler(IUserRepository userRepository, IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<bool> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
@@ -22,10 +25,10 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, bool>
             || user.PasswordResetTokenExpiry == null
             || user.PasswordResetTokenExpiry < DateTime.UtcNow)
         {
-            throw new UnauthorizedAccessException("Invalid or expired password reset token.");
+            throw new ForbiddenOperationException("Invalid or expired password reset token.");
         }
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiry = null;
         user.UpdatedAt = DateTime.UtcNow;
