@@ -2,6 +2,5 @@ namespace MovieBooking.Application.DTOs.Auth;
 
 public class PasswordResetResponseDto
 {
-    public string ResetToken { get; set; } = default!;
-    public DateTime ExpiresAt { get; set; }
+    public string Message { get; set; } = "If an account with that email exists, a password reset link has been sent.";
 }
