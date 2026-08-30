@@ -1,4 +1,4 @@
-# 🎬 CinePass - Enterprise Movie Ticket Booking System
+# 🎬 MovieTick - Enterprise Movie Ticket Booking System
 
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015%2F16-black?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![ASP.NET Core](https://img.shields.io/badge/Backend-ASP.NET%20Core%208.0-blueviolet?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
@@ -20,7 +20,7 @@ CinePass is a highly scaleable, production-ready, full-stack **Movie Ticket Book
   <tr>
     <td width="50%" align="center">
       <b>Landing Page (Now Showing / Slider)</b><br/>
-      <img src="screenshots/landing_page.png" alt="CinePass Landing Page" width="100%" fallback="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800&fit=crop"/>
+      <img src="Screenshot 2026-04-24 093434.png" alt="CinePass Landing Page" width="100%" fallback="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800&fit=crop"/>
     </td>
     <td width="50%" align="center">
       <b>Interactive Seat Selection</b><br/>
