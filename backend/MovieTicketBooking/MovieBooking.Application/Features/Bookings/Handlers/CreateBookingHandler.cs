@@ -1,9 +1,11 @@
 using MediatR;
+using MovieBooking.Application.Common;
 using MovieBooking.Application.DTOs.Bookings;
 using MovieBooking.Application.Features.Bookings.Commands;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Entities;
 using MovieBooking.Domain.Enums;
+using MovieBooking.Domain.Exceptions;
 
 namespace MovieBooking.Application.Features.Bookings.Handlers;
 
@@ -16,6 +18,7 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
     private readonly IShowtimeRepository _showtimeRepository;
     private readonly IPaymentService _paymentService;
     private readonly IBookingSettings _settings;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CreateBookingHandler(
         IBookingRepository bookingRepository,
@@ -24,7 +27,8 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
         IShowtimeSeatRepository showtimeSeatRepository,
         IShowtimeRepository showtimeRepository,
         IPaymentService paymentService,
-        IBookingSettings settings)
+        IBookingSettings settings,
+        IUnitOfWork unitOfWork)
     {
         _bookingRepository = bookingRepository;
         _bookingItemRepository = bookingItemRepository;
@@ -33,23 +37,24 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
         _showtimeRepository = showtimeRepository;
         _paymentService = paymentService;
         _settings = settings;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<CreateBookingResultDto> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
         var showtime = await _showtimeRepository.GetByIdAsync(request.ShowtimeId)
-            ?? throw new KeyNotFoundException("Showtime not found.");
+            ?? throw new EntityNotFoundException(nameof(Showtime), request.ShowtimeId);
 
         var seats = await _showtimeSeatRepository.GetByIdsAsync(request.SeatIds);
 
         foreach (var seat in seats)
         {
             if (seat.Status != SeatStatus.Reserved || seat.LockedBySession != request.SessionId)
-                throw new InvalidOperationException($"Seat {seat.SeatId} is not reserved for this session.");
+                throw new SeatUnavailableException($"Seat {seat.SeatId} is not reserved for this session.");
         }
 
         var expiryMinutes = _settings.ExpiryMinutes;
-        var bookingRef = GenerateReference();
+        var bookingRef = ReferenceCodeGenerator.GenerateBookingReference();
 
         var booking = new Booking
         {
@@ -83,9 +88,6 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
 
         booking.TotalAmount = total;
 
-        await _bookingRepository.AddAsync(booking);
-        await _bookingItemRepository.AddRangeAsync(items);
-
         var metadata = new Dictionary<string, string>
         {
             ["bookingId"] = booking.Id.ToString(),
@@ -93,6 +95,8 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
             ["userId"] = request.UserId.ToString()
         };
 
+        // Talk to Stripe before opening a DB transaction — a slow/failed external call
+        // should never hold a database transaction open.
         var (paymentIntentId, clientSecret) = await _paymentService.CreatePaymentIntentAsync(total, "usd", metadata);
 
         var payment = new Payment
@@ -104,7 +108,15 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
             Status = PaymentStatus.Pending
         };
 
-        await _paymentRepository.AddAsync(payment);
+        // Booking + its items + its payment record must all land together — a crash
+        // between these writes previously could leave a Booking row with no items or
+        // no payment attached to it.
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            await _bookingRepository.AddAsync(booking);
+            await _bookingItemRepository.AddRangeAsync(items);
+            await _paymentRepository.AddAsync(payment);
+        }, cancellationToken);
 
         return new CreateBookingResultDto
         {
@@ -114,12 +126,5 @@ public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Create
             StripeClientSecret = clientSecret,
             StripePaymentIntentId = paymentIntentId
         };
-    }
-
-    private static string GenerateReference()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        return new string(Enumerable.Repeat(chars, 8).Select(s => s[random.Next(s.Length)]).ToArray());
     }
 }
