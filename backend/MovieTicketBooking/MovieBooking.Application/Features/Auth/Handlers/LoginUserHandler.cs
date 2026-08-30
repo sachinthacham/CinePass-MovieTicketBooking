@@ -11,17 +11,20 @@ public class LoginUserHandler : IRequestHandler<LoginUserCommand, AuthResponseDt
 {
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
+    private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILogger<LoginUserHandler> _logger;
 
     public LoginUserHandler(
         IUserRepository userRepository,
         IJwtService jwtService,
+        IPasswordHasher passwordHasher,
         IRefreshTokenRepository refreshTokenRepository,
         ILogger<LoginUserHandler> logger)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
+        _passwordHasher = passwordHasher;
         _refreshTokenRepository = refreshTokenRepository;
         _logger = logger;
     }
@@ -38,7 +41,7 @@ public class LoginUserHandler : IRequestHandler<LoginUserCommand, AuthResponseDt
             throw new UnauthorizedAccessException("Invalid credentials");
         }
 
-        if (string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (string.IsNullOrEmpty(user.PasswordHash) || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
             _logger.LogWarning("Invalid password attempt for {Email}", request.Email);
             throw new UnauthorizedAccessException("Invalid credentials");
