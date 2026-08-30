@@ -1,4 +1,5 @@
 using MediatR;
+using MovieBooking.Application.Common;
 using MovieBooking.Application.Features.Bookings.Commands;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Entities;
@@ -17,6 +18,7 @@ public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, bool
     private readonly IQrCodeService _qrCodeService;
     private readonly INotificationService _notificationService;
     private readonly ISeatAvailabilityNotifier _notifier;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ConfirmBookingHandler(
         IBookingRepository bookingRepository,
@@ -27,7 +29,8 @@ public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, bool
         INotificationRepository notificationRepository,
         IQrCodeService qrCodeService,
         INotificationService notificationService,
-        ISeatAvailabilityNotifier notifier)
+        ISeatAvailabilityNotifier notifier,
+        IUnitOfWork unitOfWork)
     {
         _bookingRepository = bookingRepository;
         _paymentRepository = paymentRepository;
@@ -38,6 +41,7 @@ public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, bool
         _qrCodeService = qrCodeService;
         _notificationService = notificationService;
         _notifier = notifier;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<bool> Handle(ConfirmBookingCommand request, CancellationToken cancellationToken)
@@ -48,64 +52,71 @@ public class ConfirmBookingHandler : IRequestHandler<ConfirmBookingCommand, bool
         var booking = await _bookingRepository.GetByIdAsync(payment.BookingId);
         if (booking == null) return false;
 
-        payment.Status = PaymentStatus.Succeeded;
-        payment.StripeChargeId = request.ChargeId;
-        payment.PaidAt = DateTime.UtcNow;
-        await _paymentRepository.UpdateAsync(payment);
+        // Stripe can deliver the same webhook event more than once. If this booking
+        // is already confirmed, treat a repeat delivery as a successful no-op instead
+        // of re-generating tickets/notifications.
+        if (booking.Status == BookingStatus.Confirmed)
+            return true;
 
-        booking.Status = BookingStatus.Confirmed;
-        booking.ConfirmedAt = DateTime.UtcNow;
-        await _bookingRepository.UpdateAsync(booking);
+        var showtimeSeats = new List<ShowtimeSeat>();
 
-        var items = await _bookingItemRepository.GetByBookingAsync(booking.Id);
-
-        var seatIds = items.Select(i => i.ShowtimeSeatId).ToList();
-        var showtimeSeats = await _showtimeSeatRepository.GetByIdsAsync(seatIds);
-
-        foreach (var seat in showtimeSeats)
+        // All of this must land together: if the seat-status update loses a
+        // concurrency race (e.g. against the lock-cleanup background service), the
+        // whole confirmation rolls back rather than leaving a Confirmed booking with
+        // seats still marked Reserved. The webhook caller gets a 409 and Stripe will
+        // retry the event, which is the intended recovery path for that rare race.
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            seat.Status = SeatStatus.Booked;
-            seat.BlockedUntil = null;
-            seat.LockedBySession = null;
-        }
-        await _showtimeSeatRepository.UpdateRangeAsync(showtimeSeats);
+            payment.Status = PaymentStatus.Succeeded;
+            payment.StripeChargeId = request.ChargeId;
+            payment.PaidAt = DateTime.UtcNow;
+            await _paymentRepository.UpdateAsync(payment);
 
+            booking.Confirm();
+            await _bookingRepository.UpdateAsync(booking);
+
+            var items = await _bookingItemRepository.GetByBookingAsync(booking.Id);
+            var seatIds = items.Select(i => i.ShowtimeSeatId).ToList();
+            showtimeSeats.AddRange(await _showtimeSeatRepository.GetByIdsAsync(seatIds));
+
+            foreach (var seat in showtimeSeats)
+            {
+                seat.Status = SeatStatus.Booked;
+                seat.BlockedUntil = null;
+                seat.LockedBySession = null;
+            }
+            await _showtimeSeatRepository.UpdateRangeAsync(showtimeSeats);
+
+            var tickets = items.Select(item => new Ticket
+            {
+                BookingId = booking.Id,
+                BookingItemId = item.Id,
+                TicketNumber = ReferenceCodeGenerator.GenerateTicketNumber(),
+                QrCodeData = _qrCodeService.GenerateQrCodeBase64($"{booking.BookingReference}:{item.SeatNumber}"),
+                IsUsed = false
+            }).ToList();
+
+            await _ticketRepository.AddRangeAsync(tickets);
+
+            var notification = new Notification
+            {
+                UserId = booking.UserId,
+                Title = "Booking Confirmed",
+                Message = $"Your booking {booking.BookingReference} has been confirmed. Enjoy the show!",
+                Type = "BookingConfirmation",
+                IsRead = false,
+                MetaData = System.Text.Json.JsonSerializer.Serialize(new { bookingId = booking.Id, reference = booking.BookingReference })
+            };
+            await _notificationRepository.AddAsync(notification);
+        }, cancellationToken);
+
+        // Side effects that talk to the outside world happen only after the
+        // transaction has committed, and never roll back the confirmation if they fail.
         foreach (var seat in showtimeSeats)
             await _notifier.NotifySeatStatusChangedAsync(booking.ShowtimeId, seat.SeatId, "Booked");
-
-        var tickets = items.Select(item => new Ticket
-        {
-            BookingId = booking.Id,
-            BookingItemId = item.Id,
-            TicketNumber = GenerateTicketNumber(),
-            QrCodeData = _qrCodeService.GenerateQrCodeBase64($"{booking.BookingReference}:{item.SeatNumber}"),
-            IsUsed = false
-        }).ToList();
-
-        await _ticketRepository.AddRangeAsync(tickets);
-
-        var notification = new Notification
-        {
-            UserId = booking.UserId,
-            Title = "Booking Confirmed",
-            Message = $"Your booking {booking.BookingReference} has been confirmed. Enjoy the show!",
-            Type = "BookingConfirmation",
-            IsRead = false,
-            MetaData = System.Text.Json.JsonSerializer.Serialize(new { bookingId = booking.Id, reference = booking.BookingReference })
-        };
-        await _notificationRepository.AddAsync(notification);
 
         await _notificationService.SendBookingConfirmationAsync(booking);
 
         return true;
-    }
-
-    private static string GenerateTicketNumber()
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
-        var part1 = new string(Enumerable.Repeat(chars, 4).Select(s => s[random.Next(s.Length)]).ToArray());
-        var part2 = new string(Enumerable.Repeat(chars, 4).Select(s => s[random.Next(s.Length)]).ToArray());
-        return $"TKT-{part1}-{part2}";
     }
 }
