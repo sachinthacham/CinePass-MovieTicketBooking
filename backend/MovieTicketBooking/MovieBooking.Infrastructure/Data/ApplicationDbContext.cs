@@ -160,6 +160,20 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(ss => ss.SeatId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Speeds up seat-availability lookups and the lock-cleanup background service,
+        // both of which filter on (ShowtimeId, Status).
+        modelBuilder.Entity<ShowtimeSeat>()
+            .HasIndex(ss => new { ss.ShowtimeId, ss.Status });
+
+        // Optimistic concurrency tokens — see RowVersion doc comments on the entities.
+        modelBuilder.Entity<ShowtimeSeat>()
+            .Property(ss => ss.RowVersion)
+            .IsRowVersion();
+
+        modelBuilder.Entity<Booking>()
+            .Property(b => b.RowVersion)
+            .IsRowVersion();
+
         // Showtime status stored as string
         modelBuilder.Entity<Showtime>()
             .Property(s => s.Status)
