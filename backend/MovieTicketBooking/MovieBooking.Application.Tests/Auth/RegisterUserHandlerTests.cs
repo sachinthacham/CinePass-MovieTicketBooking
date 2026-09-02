@@ -16,7 +16,9 @@ public class RegisterUserHandlerTests
             .Setup(x => x.GetByEmailAsync("admin@movietick.com"))
             .ReturnsAsync(new User { Email = "admin@movietick.com" });
 
-        var handler = new RegisterUserHandler(userRepository.Object);
+        var passwordHasher = new Mock<IPasswordHasher>();
+
+        var handler = new RegisterUserHandler(userRepository.Object, passwordHasher.Object);
         var command = new RegisterUserCommand("Admin User", "admin@movietick.com", "Admin@123456");
 
         var act = () => handler.Handle(command, CancellationToken.None);
@@ -40,7 +42,12 @@ public class RegisterUserHandlerTests
             .Callback<User>(user => savedUser = user)
             .Returns(Task.CompletedTask);
 
-        var handler = new RegisterUserHandler(userRepository.Object);
+        var passwordHasher = new Mock<IPasswordHasher>();
+        passwordHasher
+            .Setup(x => x.Hash("User@123456"))
+            .Returns("hashed:User@123456");
+
+        var handler = new RegisterUserHandler(userRepository.Object, passwordHasher.Object);
         var command = new RegisterUserCommand("New User", "new.user@movietick.com", "User@123456");
 
         var userId = await handler.Handle(command, CancellationToken.None);
@@ -49,8 +56,8 @@ public class RegisterUserHandlerTests
         Assert.NotNull(savedUser);
         Assert.Equal("New User", savedUser!.FullName);
         Assert.Equal("new.user@movietick.com", savedUser.Email);
-        Assert.NotEqual("User@123456", savedUser.PasswordHash);
-        Assert.True(BCrypt.Net.BCrypt.Verify("User@123456", savedUser.PasswordHash));
+        Assert.Equal("hashed:User@123456", savedUser.PasswordHash);
+        passwordHasher.Verify(x => x.Hash("User@123456"), Times.Once);
         userRepository.Verify(x => x.AddAsync(It.IsAny<User>()), Times.Once);
     }
 }

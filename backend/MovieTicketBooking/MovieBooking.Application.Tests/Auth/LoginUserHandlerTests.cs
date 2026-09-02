@@ -14,6 +14,7 @@ public class LoginUserHandlerTests
     {
         var userRepository = new Mock<IUserRepository>();
         var jwtService = new Mock<IJwtService>();
+        var passwordHasher = new Mock<IPasswordHasher>();
         var refreshTokenRepository = new Mock<IRefreshTokenRepository>();
         var logger = new Mock<ILogger<LoginUserHandler>>();
 
@@ -24,6 +25,7 @@ public class LoginUserHandlerTests
         var handler = new LoginUserHandler(
             userRepository.Object,
             jwtService.Object,
+            passwordHasher.Object,
             refreshTokenRepository.Object,
             logger.Object);
 
@@ -40,6 +42,7 @@ public class LoginUserHandlerTests
     {
         var userRepository = new Mock<IUserRepository>();
         var jwtService = new Mock<IJwtService>();
+        var passwordHasher = new Mock<IPasswordHasher>();
         var refreshTokenRepository = new Mock<IRefreshTokenRepository>();
         var logger = new Mock<ILogger<LoginUserHandler>>();
 
@@ -47,17 +50,21 @@ public class LoginUserHandlerTests
         {
             Id = Guid.NewGuid(),
             Email = "user@movietick.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Correct@123"),
+            PasswordHash = "hashed:Correct@123",
             Role = "User"
         };
 
         userRepository
             .Setup(x => x.GetByEmailAsync(user.Email))
             .ReturnsAsync(user);
+        passwordHasher
+            .Setup(x => x.Verify("Wrong@123", user.PasswordHash))
+            .Returns(false);
 
         var handler = new LoginUserHandler(
             userRepository.Object,
             jwtService.Object,
+            passwordHasher.Object,
             refreshTokenRepository.Object,
             logger.Object);
 
@@ -74,6 +81,7 @@ public class LoginUserHandlerTests
     {
         var userRepository = new Mock<IUserRepository>();
         var jwtService = new Mock<IJwtService>();
+        var passwordHasher = new Mock<IPasswordHasher>();
         var refreshTokenRepository = new Mock<IRefreshTokenRepository>();
         var logger = new Mock<ILogger<LoginUserHandler>>();
 
@@ -81,13 +89,16 @@ public class LoginUserHandlerTests
         {
             Id = Guid.NewGuid(),
             Email = "admin@movietick.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
+            PasswordHash = "hashed:Admin@123456",
             Role = "Admin"
         };
 
         userRepository
             .Setup(x => x.GetByEmailAsync(user.Email))
             .ReturnsAsync(user);
+        passwordHasher
+            .Setup(x => x.Verify("Admin@123456", user.PasswordHash))
+            .Returns(true);
 
         jwtService
             .Setup(x => x.GenerateToken(user.Id, user.Email, user.Role))
@@ -105,6 +116,7 @@ public class LoginUserHandlerTests
         var handler = new LoginUserHandler(
             userRepository.Object,
             jwtService.Object,
+            passwordHasher.Object,
             refreshTokenRepository.Object,
             logger.Object);
 
