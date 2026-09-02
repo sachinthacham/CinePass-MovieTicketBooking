@@ -19,6 +19,7 @@ using System.Text.Json.Serialization;
 using MovieBooking.Infrastructure.BackgroundServices;
 using MovieBooking.Api.Hubs;
 using MovieBooking.Api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 
 LoadDotEnv();
 var builder = WebApplication.CreateBuilder(args);
@@ -106,9 +107,11 @@ builder.Services.AddScoped<IBookingItemRepository, BookingItemRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IUnitOfWork, MovieBooking.Infrastructure.Data.UnitOfWork>();
 
 // ─── Services ─────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IPaymentService, StripePaymentService>();
@@ -169,6 +172,8 @@ builder.Services.AddSwaggerGen(c =>
 // ─── JWT Authentication ───────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("JWT Key is not configured.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MovieBookingApi";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MovieBookingClient";
 
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -181,8 +186,10 @@ var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ClockSkew = TimeSpan.Zero,
@@ -282,17 +289,48 @@ if (!string.IsNullOrWhiteSpace(appleClientId))
 }
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
+// "Frontend:AllowedOrigins" is a comma-separated list for production domains
+// (e.g. "https://app.example.com,https://admin.example.com"); the localhost
+// entries stay so local dev keeps working out of the box.
+var additionalOrigins = (builder.Configuration["Frontend:AllowedOrigins"] ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+var corsOrigins = new[] { builder.Configuration["Frontend:BaseUrl"] ?? "http://localhost:3000" }
+    .Concat(additionalOrigins)
+    .Concat(["http://localhost:3000", "http://localhost:3001"])
+    .Distinct()
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration["Frontend:BaseUrl"] ?? "http://localhost:3000",
-                "http://localhost:3000",
-                "http://localhost:3001")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
+    });
+});
+
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Login/register/password-reset/refresh — brute-force and credential-stuffing surface.
+    options.AddFixedWindowLimiter("auth", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 10;
+        opt.QueueLimit = 0;
+    });
+
+    // Seat lock/unlock — was previously anonymous and unthrottled; caps griefing/DoS potential.
+    options.AddFixedWindowLimiter("seat-lock", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 30;
+        opt.QueueLimit = 0;
     });
 });
 
@@ -309,16 +347,20 @@ using (var scope = app.Services.CreateScope())
 Log.Information("MovieBooking API starting up...");
 
 // ─── Middleware pipeline ──────────────────────────────────────────────────────
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Movie Ticket Booking API v1");
-    c.RoutePrefix = string.Empty;
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Movie Ticket Booking API v1");
+        c.RoutePrefix = string.Empty;
+    });
+}
 
 app.UseStaticFiles();
-app.UseCors("AllowAll");
+app.UseCors("Frontend");
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
