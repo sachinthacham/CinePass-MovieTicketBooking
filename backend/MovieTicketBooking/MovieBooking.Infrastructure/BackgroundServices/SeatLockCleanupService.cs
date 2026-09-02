@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Enums;
+using MovieBooking.Domain.Exceptions;
 
 namespace MovieBooking.Infrastructure.BackgroundServices;
 
@@ -40,6 +41,15 @@ public class SeatLockCleanupService : BackgroundService
             {
                 _logger.LogError(ex, "Error in SeatLockCleanupService");
             }
+
+            try
+            {
+                await CleanupExpiredBookingsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error expiring stale pending bookings");
+            }
         }
 
         _logger.LogInformation("SeatLockCleanupService stopped.");
@@ -63,8 +73,49 @@ public class SeatLockCleanupService : BackgroundService
             seat.LockedBySession = null;
         }
 
-        await showtimeSeatRepo.UpdateRangeAsync(expiredSeats);
+        try
+        {
+            await showtimeSeatRepo.UpdateRangeAsync(expiredSeats);
+            _logger.LogInformation("Expired seat locks released.");
+        }
+        catch (SeatUnavailableException)
+        {
+            // A seat in this batch was booked/re-locked between the read above and this
+            // write (e.g. its payment confirmed right as its lock was about to expire).
+            // That seat no longer needs releasing — nothing to do, just move on.
+            _logger.LogInformation("Some expired locks were already superseded by a newer booking; skipped.");
+        }
+    }
 
-        _logger.LogInformation("Expired seat locks released.");
+    /// <summary>
+    /// A Booking stays Pending from creation until its Stripe payment succeeds. If the
+    /// user abandons checkout, the seat lock above expires and the seat becomes bookable
+    /// again — but without this pass, the orphaned Booking row itself would stay Pending
+    /// forever with no automatic cancellation.
+    /// </summary>
+    private async Task CleanupExpiredBookingsAsync()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var bookingRepo = scope.ServiceProvider.GetRequiredService<IBookingRepository>();
+
+        var expiredBookings = await bookingRepo.GetExpiredPendingAsync();
+
+        if (expiredBookings.Count == 0) return;
+
+        _logger.LogInformation("Expiring {Count} stale pending bookings.", expiredBookings.Count);
+
+        foreach (var booking in expiredBookings)
+        {
+            try
+            {
+                booking.Expire();
+                await bookingRepo.UpdateAsync(booking);
+            }
+            catch (InvalidBookingStateException)
+            {
+                // The booking was confirmed or cancelled by another request in the
+                // brief window between the read above and this write — leave it alone.
+            }
+        }
     }
 }
