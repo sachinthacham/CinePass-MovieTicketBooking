@@ -28,7 +28,8 @@ public class BookingsController : ControllerBase
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var result = await _mediator.Send(new CreateBookingCommand(userId, dto.ShowtimeId, dto.SeatIds, dto.SessionId));
-        return Ok(ApiResponse<CreateBookingResultDto>.SuccessResponse(result, "Booking created. Complete payment to confirm."));
+        return CreatedAtAction(nameof(GetById), new { id = result.BookingId, version = "1.0" },
+            ApiResponse<CreateBookingResultDto>.SuccessResponse(result, "Booking created. Complete payment to confirm."));
     }
 
     [Authorize]
@@ -54,7 +55,7 @@ public class BookingsController : ControllerBase
     }
 
     [Authorize]
-    [HttpDelete("{id:guid}/cancel")]
+    [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelBookingRequestDto dto)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -71,14 +72,15 @@ public class BookingsController : ControllerBase
         [FromQuery] BookingStatus? status = null,
         [FromQuery] Guid? userId = null,
         [FromQuery] DateTime? fromDate = null,
-        [FromQuery] DateTime? toDate = null)
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] string? search = null)
     {
-        var result = await _mediator.Send(new GetAllBookingsQuery(page, pageSize, status, userId, fromDate, toDate));
+        var result = await _mediator.Send(new GetAllBookingsQuery(page, pageSize, status, userId, fromDate, toDate, search));
         return Ok(ApiResponse<PagedBookingsDto>.SuccessResponse(result));
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpDelete("admin/{id:guid}")]
+    [HttpPost("admin/{id:guid}/cancel")]
     public async Task<IActionResult> AdminCancel(Guid id, [FromBody] CancelBookingRequestDto dto)
     {
         var adminId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
