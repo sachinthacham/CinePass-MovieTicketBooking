@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MovieBooking.Application.Common.Responses;
 using MovieBooking.Application.Features.SeatLocks.Commands;
 
@@ -8,6 +10,8 @@ namespace MovieBooking.API.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/seat-locks")]
 [ApiVersion("1.0")]
+[Authorize]
+[EnableRateLimiting("seat-lock")]
 public class SeatLocksController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -24,7 +28,7 @@ public class SeatLocksController : ControllerBase
         return Ok(ApiResponse<bool>.SuccessResponse(result, "Seats locked for 10 minutes."));
     }
 
-    [HttpDelete]
+    [HttpPost("unlock")]
     public async Task<IActionResult> Unlock([FromBody] SeatLockRequestDto dto)
     {
         var result = await _mediator.Send(new UnlockSeatsCommand(dto.ShowtimeId, dto.SeatIds, dto.SessionId));

@@ -12,10 +12,12 @@ namespace MovieBooking.API.Controllers;
 public class PaymentsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IMediator mediator)
+    public PaymentsController(IMediator mediator, ILogger<PaymentsController> logger)
     {
         _mediator = mediator;
+        _logger = logger;
     }
 
     [AllowAnonymous]
@@ -37,7 +39,11 @@ public class PaymentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ApiResponse<string>.FailureResponse(ex.Message));
+            // Signature/parsing failures land here — log the real reason but never
+            // echo webhook internals (e.g. Stripe signature-verification details) back
+            // in the response body.
+            _logger.LogWarning(ex, "Stripe webhook processing failed");
+            return BadRequest(ApiResponse<string>.FailureResponse("Webhook processing failed."));
         }
     }
 }
