@@ -2,6 +2,7 @@ using MediatR;
 using MovieBooking.Application.Features.SeatLocks.Commands;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Enums;
+using MovieBooking.Domain.Exceptions;
 
 namespace MovieBooking.Application.Features.SeatLocks.Handlers;
 
@@ -27,7 +28,7 @@ public class LockSeatsHandler : IRequestHandler<LockSeatsCommand, bool>
             !(s.Status == SeatStatus.Reserved && s.LockedBySession == request.SessionId)).ToList();
 
         if (unavailable.Any())
-            throw new InvalidOperationException($"{unavailable.Count} seat(s) are not available.");
+            throw new SeatUnavailableException($"{unavailable.Count} seat(s) are not available.");
 
         var lockMinutes = _settings.LockDurationMinutes;
 
