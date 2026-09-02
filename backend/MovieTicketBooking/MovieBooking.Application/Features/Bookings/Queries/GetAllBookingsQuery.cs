@@ -10,5 +10,6 @@ public record GetAllBookingsQuery(
     BookingStatus? Status = null,
     Guid? UserId = null,
     DateTime? FromDate = null,
-    DateTime? ToDate = null
+    DateTime? ToDate = null,
+    string? Search = null
 ) : IRequest<PagedBookingsDto>;

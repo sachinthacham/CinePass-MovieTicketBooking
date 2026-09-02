@@ -17,7 +17,7 @@ public class GetAllBookingsHandler : IRequestHandler<GetAllBookingsQuery, PagedB
     public async Task<PagedBookingsDto> Handle(GetAllBookingsQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _bookingRepository.GetAllAsync(
-            request.Page, request.PageSize, request.Status, request.UserId, request.FromDate, request.ToDate);
+            request.Page, request.PageSize, request.Status, request.UserId, request.FromDate, request.ToDate, request.Search);
 
         return new PagedBookingsDto
         {
