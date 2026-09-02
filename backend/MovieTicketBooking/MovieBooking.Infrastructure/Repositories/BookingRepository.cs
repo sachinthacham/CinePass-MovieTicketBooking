@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieBooking.Application.Interfaces;
 using MovieBooking.Domain.Entities;
 using MovieBooking.Domain.Enums;
+using MovieBooking.Domain.Exceptions;
 using MovieBooking.Infrastructure.Data;
 
 namespace MovieBooking.Infrastructure.Repositories;
@@ -62,7 +63,7 @@ public class BookingRepository : IBookingRepository
         return (items, total);
     }
 
-    public async Task<(List<Booking> Items, int TotalCount)> GetAllAsync(int page, int pageSize, BookingStatus? status, Guid? userId, DateTime? fromDate, DateTime? toDate)
+    public async Task<(List<Booking> Items, int TotalCount)> GetAllAsync(int page, int pageSize, BookingStatus? status, Guid? userId, DateTime? fromDate, DateTime? toDate, string? search = null)
     {
         var query = _context.Bookings
             .Include(b => b.User)
@@ -84,6 +85,13 @@ public class BookingRepository : IBookingRepository
         if (toDate.HasValue)
             query = query.Where(b => b.CreatedAt <= toDate.Value);
 
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(b =>
+                b.BookingReference.Contains(search) ||
+                b.User.FullName.Contains(search) ||
+                b.User.Email.Contains(search) ||
+                b.Showtime.Movie.Title.Contains(search));
+
         var total = await query.CountAsync();
         var items = await query
             .OrderByDescending(b => b.CreatedAt)
@@ -94,9 +102,23 @@ public class BookingRepository : IBookingRepository
         return (items, total);
     }
 
+    public async Task<List<Booking>> GetExpiredPendingAsync()
+        => await _context.Bookings
+            .Include(b => b.BookingItems)
+            .Where(b => b.Status == BookingStatus.Pending && b.ExpiresAt < DateTime.UtcNow)
+            .ToListAsync();
+
     public async Task UpdateAsync(Booking booking)
     {
         _context.Bookings.Update(booking);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidBookingStateException(
+                $"Booking {booking.BookingReference} was modified by another request. Please refresh and try again.");
+        }
     }
 }

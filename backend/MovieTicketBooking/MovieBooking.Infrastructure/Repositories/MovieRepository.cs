@@ -27,6 +27,7 @@ public class MovieRepository : IMovieRepository
         string? sortBy = null, string? cityFilter = null, Guid? formatId = null)
     {
         var query = _context.Movies
+            .AsNoTracking()
             .Include(m => m.Genres).ThenInclude(mg => mg.Genre)
             .Include(m => m.Languages).ThenInclude(ml => ml.Language)
             .Include(m => m.Posters)
@@ -77,6 +78,7 @@ public class MovieRepository : IMovieRepository
 
     public async Task<Movie?> GetByIdAsync(Guid id)
         => await _context.Movies
+            .AsNoTracking()
             .Include(m => m.Genres).ThenInclude(mg => mg.Genre)
             .Include(m => m.Languages).ThenInclude(ml => ml.Language)
             .Include(m => m.Posters)

@@ -21,7 +21,7 @@ public class LanguageRepository : ILanguageRepository
     }
 
     public async Task<List<Language>> GetAllAsync()
-        => await _context.Languages.OrderBy(l => l.Name).ToListAsync();
+        => await _context.Languages.AsNoTracking().OrderBy(l => l.Name).ToListAsync();
 
     public async Task<Language?> GetByIdAsync(Guid id)
         => await _context.Languages.FindAsync(id);

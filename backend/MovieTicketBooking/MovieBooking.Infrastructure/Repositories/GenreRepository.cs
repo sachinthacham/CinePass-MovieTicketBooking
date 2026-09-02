@@ -21,13 +21,13 @@ public class GenreRepository : IGenreRepository
     }
 
     public async Task<List<Genre>> GetAllAsync()
-        => await _context.Genres.OrderBy(g => g.Name).ToListAsync();
+        => await _context.Genres.AsNoTracking().OrderBy(g => g.Name).ToListAsync();
 
     public async Task<Genre?> GetByIdAsync(Guid id)
         => await _context.Genres.FindAsync(id);
 
     public async Task<Genre?> GetByNameAsync(string name)
-        => await _context.Genres.FirstOrDefaultAsync(g => g.Name.ToLower() == name.ToLower());
+        => await _context.Genres.AsNoTracking().FirstOrDefaultAsync(g => g.Name.ToLower() == name.ToLower());
 
     public async Task UpdateAsync(Genre genre)
     {
