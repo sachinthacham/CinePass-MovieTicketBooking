@@ -36,7 +36,7 @@ public class MoviePosterRepository : IMoviePosterRepository
     }
 
     public async Task<List<MoviePoster>> GetByMovieAsync(Guid movieId)
-        => await _context.MoviePosters.Where(p => p.MovieId == movieId).ToListAsync();
+        => await _context.MoviePosters.AsNoTracking().Where(p => p.MovieId == movieId).ToListAsync();
 
     
     public async Task ClearPrimaryAsync(Guid movieId)
