@@ -22,6 +22,7 @@ public class ShowtimeRepository : IShowtimeRepository
 
     public async Task<Showtime?> GetByIdAsync(Guid id)
         => await _context.Showtimes
+            .AsNoTracking()
             .Include(s => s.Movie)
             .Include(s => s.Screen).ThenInclude(sc => sc.Theater)
             .Include(s => s.ShowFormat)
@@ -32,6 +33,7 @@ public class ShowtimeRepository : IShowtimeRepository
     public async Task<List<Showtime>> GetByMovieAsync(Guid movieId, DateTime? date)
     {
         var query = _context.Showtimes
+            .AsNoTracking()
             .Include(s => s.Movie)
             .Include(s => s.Screen).ThenInclude(sc => sc.Theater)
             .Include(s => s.ShowFormat)
@@ -48,6 +50,7 @@ public class ShowtimeRepository : IShowtimeRepository
     public async Task<List<Showtime>> GetByTheaterAsync(Guid theaterId, DateTime? date)
     {
         var query = _context.Showtimes
+            .AsNoTracking()
             .Include(s => s.Movie)
             .Include(s => s.Screen).ThenInclude(sc => sc.Theater)
             .Include(s => s.ShowFormat)
@@ -64,6 +67,7 @@ public class ShowtimeRepository : IShowtimeRepository
     public async Task<List<Showtime>> GetByScreenAsync(Guid screenId, DateTime? date)
     {
         var query = _context.Showtimes
+            .AsNoTracking()
             .Include(s => s.Movie)
             .Include(s => s.Screen).ThenInclude(sc => sc.Theater)
             .Include(s => s.ShowFormat)
@@ -79,6 +83,7 @@ public class ShowtimeRepository : IShowtimeRepository
 
     public async Task<List<Showtime>> GetRecentAsync(int take)
         => await _context.Showtimes
+            .AsNoTracking()
             .Include(s => s.Movie)
             .Include(s => s.Screen).ThenInclude(sc => sc.Theater)
             .Include(s => s.ShowFormat)

@@ -22,12 +22,14 @@ public class ShowtimePricingRepository : IShowtimePricingRepository
 
     public async Task<List<ShowtimePricing>> GetByShowtimeAsync(Guid showtimeId)
         => await _context.ShowtimePricings
+            .AsNoTracking()
             .Include(p => p.SeatCategory)
             .Where(p => p.ShowtimeId == showtimeId)
             .ToListAsync();
 
     public async Task<ShowtimePricing?> GetByShowtimeAndCategoryAsync(Guid showtimeId, Guid seatCategoryId)
         => await _context.ShowtimePricings
+            .AsNoTracking()
             .Include(p => p.SeatCategory)
             .FirstOrDefaultAsync(p => p.ShowtimeId == showtimeId && p.SeatCategoryId == seatCategoryId);
 

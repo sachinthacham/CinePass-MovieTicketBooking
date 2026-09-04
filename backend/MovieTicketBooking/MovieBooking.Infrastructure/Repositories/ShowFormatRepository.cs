@@ -21,7 +21,7 @@ public class ShowFormatRepository : IShowFormatRepository
     }
 
     public async Task<List<ShowFormat>> GetAllAsync()
-        => await _context.ShowFormats.OrderBy(f => f.Name).ToListAsync();
+        => await _context.ShowFormats.AsNoTracking().OrderBy(f => f.Name).ToListAsync();
 
     public async Task<ShowFormat?> GetByIdAsync(Guid id)
         => await _context.ShowFormats.FindAsync(id);
