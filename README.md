@@ -1,62 +1,73 @@
-# 🎬 MovieTick - Enterprise Movie Ticket Booking System
+# 🎬 CinePass — Movie Ticket Booking Platform
 
-[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2015%2F16-black?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
 [![ASP.NET Core](https://img.shields.io/badge/Backend-ASP.NET%20Core%208.0-blueviolet?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
 [![SQL Server](https://img.shields.io/badge/Database-SQL%20Server-red?style=for-the-badge&logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
 [![Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38B2AC?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![Stripe](https://img.shields.io/badge/Payment-Stripe-008FDF?style=for-the-badge&logo=stripe)](https://stripe.com/)
-[![SignalR](https://img.shields.io/badge/Real--Time-SignalR%20WebSockets-orange?style=for-the-badge&logo=signalr)](https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction)
+[![SignalR](https://img.shields.io/badge/Real--Time-SignalR-orange?style=for-the-badge&logo=signalr)](https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-CinePass is a highly scaleable, production-ready, full-stack **Movie Ticket Booking Application** engineered with modern design principles. Built using a **Clean Architecture** backend in **.NET 8.0** and a **Next.js (App Router)** frontend, the system delivers real-time updates, secure checkout flows, automated booking cleanups, and dynamic content management.
+**CinePass** is a full-stack movie ticket booking platform: browse showtimes, watch seats lock and unlock **live** as other customers pick them, pay by card through Stripe, and receive a QR-coded e-ticket by email. Built with a **Clean Architecture** backend in **.NET 8** (CQRS via MediatR) and a **Next.js 16 / React 19** frontend.
+
+This isn't a CRUD demo — it's built around the concurrency and payment-correctness problems a real booking system has to solve: two people can't buy the same seat, a card charge can't silently lose its ticket, and a webhook that fires twice can't create two bookings. See [Engineering Highlights](#-engineering-highlights) below.
 
 ---
 
-## 🖼️ Application Showcase (Screenshots)
+## 🖼️ Screenshots
 
-> [!NOTE]
-> Add your frontend screenshots in a folder named `screenshots` at the root of the project, then replace the image paths below.
+> Save your screenshots to `docs/screenshots/` using the filenames below (or update the paths).
 
 <table width="100%">
   <tr>
     <td width="50%" align="center">
-      <b>Landing Page (Now Showing / Slider)</b><br/>
-      <img src="Screenshot 2026-04-24 093434.png" alt="CinePass Landing Page" width="100%" fallback="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=800&fit=crop"/>
+      <b>Landing Page</b><br/>
+      <img src="docs/screenshots/landing.png" alt="CinePass landing page — Now Showing slider" width="100%"/>
     </td>
     <td width="50%" align="center">
       <b>Interactive Seat Selection</b><br/>
-      <img src="screenshots/seat_selection.png" alt="Seat Booking Screen" width="100%" fallback="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=800&fit=crop"/>
+      <img src="docs/screenshots/seat-selection.png" alt="Live seat selection screen" width="100%"/>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <b>Stripe Secure Checkout</b><br/>
-      <img src="screenshots/checkout.png" alt="Stripe Checkout" width="100%" fallback="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&fit=crop"/>
+      <b>Stripe Checkout</b><br/>
+      <img src="docs/screenshots/checkout.png" alt="Stripe secure checkout" width="100%"/>
     </td>
     <td width="50%" align="center">
-      <b>Admin Dashboard (Analytics & Showtimes)</b><br/>
-      <img src="screenshots/admin_dashboard.png" alt="Admin Panel" width="100%" fallback="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&fit=crop"/>
+      <b>Admin Dashboard</b><br/>
+      <img src="docs/screenshots/admin-dashboard.png" alt="Admin panel — showtimes and analytics" width="100%"/>
     </td>
   </tr>
 </table>
 
 ---
 
-## 🚀 Key Architectural Features
+## 🏗️ Architecture
 
-### 🔹 Backend (.NET 8.0 Clean Architecture)
-* **Domain-Driven Design (DDD)**: Organized into strict API, Application, Infrastructure, and Domain layers to isolate core business rules from frameworks and databases.
-* **CQRS Pattern with MediatR**: Segregates read operations (Queries) from write operations (Commands) to increase query speed, scale teams easily, and keep controllers lightweight.
-* **Real-time Synchronization (SignalR WebSockets)**: Pushes seat selection and lock statuses instantly to all active customers. If another user locks or books a seat, it updates in real-time without refreshing the page.
-* **Distributed/Concurrent Locking (Background Services)**: Expired seat locks and pending unpaid bookings are automatically pruned by a hosted `SeatLockCleanupService` background worker running in the background.
-* **Fluent Validation & Logging**: Validation pipelines intercept inputs before reaching handlers, throwing clean API exceptions. Structured logs are generated via **Serilog** for advanced debugging.
-* **Secure Payment & Verification**: Integrates with **Stripe** Elements. On successful payment, the system creates unique, scannable digital tickets complete with **base64-encoded QR codes** and alerts users via SMTP email templates.
+> Save the two diagrams to `docs/architecture-layers.png` and `docs/architecture-flow.png`.
 
-### 🔹 Frontend (Next.js 15/16 + Tailwind CSS v4)
-* **React 19 & Next.js App Router**: Utilizes modern layouts, nested routing, and fast client-side navigation.
-* **Server State Management (TanStack React Query)**: Provides intelligent client caching, background prefetching, and loading states for a highly fluid UX.
-* **Global State (Zustand)**: Managing simple, lightweight local stores for auth states, city locations, and active seat sessions.
-* **Robust Client Forms (React Hook Form + Zod)**: Implements type-safe form validations matching the backend schema rules.
-* **Elegant UI Component Design**: Uses Radix UI primitives custom-styled with Tailwind CSS v4 to achieve premium animations, glassmorphic dropdowns, and responsive grids.
+**Backend layering** — dependencies only ever point inward; `MovieBooking.Domain` has zero external references.
+
+<img src="docs/architecture-layers.png" alt="Clean Architecture layering diagram — Domain at the center, Application around it, Infrastructure and Api as the outer ring, arrows pointing inward" width="100%"/>
+
+**A booking, start to finish** — from seat lock through Stripe payment to the (idempotent) webhook confirmation and live seat-status broadcast.
+
+<img src="docs/architecture-flow.png" alt="Sequence diagram of the booking flow across Browser, Backend API, SQL Server, Stripe, and live viewers via SignalR" width="100%"/>
+
+---
+
+## ⭐ Engineering Highlights
+
+The parts of this codebase most worth pointing to in an interview:
+
+- **Idempotent payment confirmation** — Stripe delivers webhooks *at least once*, so `ConfirmBookingHandler` checks the booking's status first; a redelivered `payment_intent.succeeded` event is treated as a no-op instead of double-issuing tickets.
+- **Transaction boundaries drawn around correctness, not convenience** — the Stripe `PaymentIntent` is created *before* the DB transaction opens (an external call should never hold a DB lock), while side effects that talk to the outside world (SignalR broadcast, confirmation email) fire only *after* the transaction commits, and never roll back a confirmed booking if they fail.
+- **Real-time seat availability without polling** — a SignalR hub groups clients by showtime (`showtime-{id}`); when one customer locks or books a seat, every other browser watching that showtime updates instantly.
+- **Self-healing seat locks** — a hosted background service (`SeatLockCleanupService`) periodically reclaims seats whose lock expired or whose booking was abandoned mid-checkout, so inventory never gets stuck.
+- **Rate limiting scoped to the actual threat** — auth endpoints (brute force / credential stuffing) and seat-lock endpoints (griefing) each carry their own limiter, rather than one blanket policy.
+- **Enforced dependency direction** — Clean Architecture isn't just a folder name here: `MovieBooking.Domain` has no project references at all; `Application` depends only on `Domain`; `Api` and `Infrastructure` are the only projects allowed to know about EF Core, Stripe, or ASP.NET.
+- **CQRS + a validation pipeline** — every command/query runs through FluentValidation automatically via a MediatR pipeline behavior, so handlers never have to hand-roll input checks.
 
 ---
 
@@ -64,49 +75,15 @@ CinePass is a highly scaleable, production-ready, full-stack **Movie Ticket Book
 
 | Layer | Technologies | Key Libraries |
 | :--- | :--- | :--- |
-| **Frontend UI** | Next.js, React 19, Tailwind CSS v4 | Zustand, Axios, TanStack React Query, React Hook Form, Zod, Lucide Icons |
-| **Backend API** | ASP.NET Core Web API (C#) | MediatR, FluentValidation, AutoMapper, Serilog, Swashbuckle (Swagger) |
-| **Persistence** | Microsoft SQL Server | Entity Framework Core (Code-First Migrations, Fluent API Relations) |
-| **Real-time** | ASP.NET Core SignalR | WebSocket connections for seat availability notifications |
-| **Services** | Background Tasks, Payments, Mailing | Hosted Services, Stripe SDK, QRCoder, SMTP Client |
-| **Infrastructure** | Containerization | Docker, Docker Compose |
-
----
-
-## 🏗️ Architecture Design
-
-The backend uses **Clean Architecture** to ensure testability, maintainability, and independence from outer-layer frameworks.
-
-```mermaid
-graph TD
-    subgraph Presentation
-        API[MovieBooking.Api]
-    end
-
-    subgraph Application
-        MediatR[MediatR CQRS Command/Query]
-        Val[FluentValidation Pipeline]
-        Int[Repository/Service Interfaces]
-    end
-
-    subgraph Domain
-        Ent[Domain Entities / Common / Enums]
-    end
-
-    subgraph Infrastructure
-        EF[EF Core DbContext]
-        SQL[(SQL Server)]
-        BG[SeatLockCleanup Background Service]
-        ExtServices[Stripe, SMTP, QR Code, SignalR]
-    end
-
-    %% Dependencies
-    API --> Application
-    Application --> Domain
-    Infrastructure --> Application
-    Infrastructure --> Domain
-    EF --> SQL
-```
+| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4 | Zustand, Axios, TanStack Query, React Hook Form, Zod, Radix UI |
+| **Backend API** | ASP.NET Core 8 Web API (C#) | MediatR (CQRS), FluentValidation, AutoMapper, Serilog, Swashbuckle |
+| **Persistence** | Microsoft SQL Server | EF Core (code-first migrations) |
+| **Real-time** | ASP.NET Core SignalR | WebSocket seat-availability broadcasts |
+| **Auth** | JWT + refresh tokens | Google / Facebook / Apple OAuth |
+| **Payments** | Stripe (Elements + PaymentIntents + webhooks) | Stripe.net |
+| **Other services** | QR codes, email, background jobs | QRCoder, MailKit (SMTP), ASP.NET hosted services |
+| **Infra** | Containerization | Docker, Docker Compose |
+| **Testing** | Backend unit tests | xUnit, Moq |
 
 ---
 
@@ -115,88 +92,105 @@ graph TD
 ```text
 ├── backend
 │   └── MovieTicketBooking
-│       ├── MovieBooking.Api             # REST Controllers, SignalR Hubs, Middlewares, Program.cs
-│       ├── MovieBooking.Application     # CQRS Commands/Queries, Handlers, DTOs, Validation, Interfaces
-│       ├── MovieBooking.Domain          # Domain Entities, Value Objects, Enums, Custom Exceptions
-│       ├── MovieBooking.Infrastructure  # Data Context, Repositories, Background Services, Integrations
+│       ├── MovieBooking.Api             # Controllers, SignalR hub, middleware, DI wiring, Program.cs
+│       ├── MovieBooking.Application     # CQRS commands/queries, MediatR handlers, DTOs, validators, interfaces
+│       ├── MovieBooking.Domain          # Entities, enums, domain exceptions — zero external dependencies
+│       ├── MovieBooking.Infrastructure  # EF Core, repositories, Stripe/SMTP/JWT services, background jobs
 │       ├── MovieBooking.Application.Tests
-│       └── MovieTicketBooking.sln       # VS Solution file
+│       └── MovieTicketBooking.sln
 ├── frontend
-│   ├── app                              # Next.js App Router Page Layouts (admin, user, booking checkout)
-│   ├── components                       # Reusable UI Primitives (DataTable, Modal, StarRating, etc.)
-│   ├── lib                              # API Clients (Axios instances), Hooks, State Management (Zustand)
-│   └── public                           # Static assets, fonts, icons
-├── docker-compose.yml                   # Infrastructure Setup (SQL Server, Api, Frontend containers)
-└── README.md                            # You are here
+│   ├── app                              # Next.js App Router pages (movies, theatres, checkout, dashboard, admin)
+│   ├── components                       # Reusable UI (layout, primitives)
+│   └── lib                              # API client, hooks, Zustand stores, types
+├── docs                                 # Architecture diagrams and screenshots (for this README)
+├── docker-compose.yml                   # SQL Server + API + frontend, containerized
+└── README.md
 ```
 
 ---
 
 ## ⚙️ Getting Started
 
-Follow these instructions to run the project locally on your machine.
-
 ### Prerequisites
-* **.NET 8.0 SDK** (Backend)
-* **Node.js (v18+ or v20+)** (Frontend)
-* **Docker Desktop** (For running SQL Server or the complete stack containerized)
 
----
+- **.NET 8 SDK**
+- **Node.js 20+**
+- **Docker Desktop** (for SQL Server, or the full containerized stack)
 
-### 💻 Local Run (Step-by-Step)
+### 1 — Database
 
-#### 1. Setup the Database
-You can spin up the SQL Server database in Docker:
 ```bash
 docker compose up sqlserver -d
 ```
-*Alternatively, if you have a local SQL Express or LocalDB instance, you can update the connection string in `backend/MovieTicketBooking/MovieBooking.Api/appsettings.Development.json`.*
 
-#### 2. Run the Backend API
-Navigate to the API folder, restore dependencies, and start the application:
+*(Or point `backend/MovieTicketBooking/MovieBooking.Api/appsettings.Development.json` at your own SQL Server instance.)*
+
+### 2 — Backend API
+
 ```bash
 cd backend/MovieTicketBooking/MovieBooking.Api
+cp .env.example .env   # fill in Stripe keys + a JWT signing key
 dotnet run
 ```
-* **Auto-Migrations & Seeding**: The API is configured to run Entity Framework Core migrations automatically on startup and seed data via `DataSeeder.cs`, populating realistic movies, theaters, showtimes, languages, and user roles.
-* **Swagger API Documentation**: Available at `http://localhost:5000/index.html`.
 
-#### 3. Run the Frontend App
-Navigate to the frontend folder, install packages, and boot the Next.js dev server:
+EF Core migrations and seed data run automatically on startup. Swagger UI: `http://localhost:5000`.
+
+### 3 — Frontend
+
 ```bash
-cd ../../../frontend
+cd frontend
 npm install
 npm run dev
 ```
-* **Client URL**: Open `http://localhost:3000` (or `http://localhost:3001` depending on port availability) in your browser.
 
----
+Open `http://localhost:3000`.
 
-### 🐳 Full Docker Stack Setup
-To run the entire ecosystem (SQL Server, Backend API, Frontend Next.js app) inside containerized environments:
+### 🐳 Or run the full stack in Docker
+
 ```bash
 docker compose up --build -d
 ```
-Access endpoints:
-* **Frontend Application**: `http://localhost:3000`
-* **Swagger API Endpoint**: `http://localhost:5000/index.html`
+
+| Service | URL |
+| :--- | :--- |
+| Frontend | `http://localhost:3000` |
+| API / Swagger | `http://localhost:5000` |
 
 ---
 
-## 🔑 Seer / Test Credentials
+## 🔑 Test Credentials
 
-The database seeder initializes the system with these users for rapid testing:
+Seeded automatically on first run:
 
-* **Administrator Account** (Full control over theater configurations, showtimes, movies):
-  * **Email**: `admin@movietick.com`
-  * **Password**: `Admin@123456`
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| Admin | `admin@movietick.com` | `Admin@123456` |
+| Customer | `jeewa@gmail.com` | `12345678` |
 
-* **Standard User Account** (Can browse movies, select seats, book, checkout via Stripe):
-  * **Email**: `jeewa@gmail.com`
-  * **Password**: `12345678`
+---
+
+## ✅ Testing
+
+Backend handlers are unit tested with **xUnit + Moq** (`MovieBooking.Application.Tests`):
+
+```bash
+cd backend/MovieTicketBooking
+dotnet test
+```
+
+Current coverage focuses on auth, admin, and movie-rating handlers. Extending it to the booking/payment handlers and wiring up CI are the next items on the roadmap below.
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Unit tests for `CreateBookingHandler`, `ConfirmBookingHandler`, and `LockSeatsHandler`
+- [ ] CI pipeline (GitHub Actions) running build + tests on every PR
+- [ ] Pagination on list endpoints
+- [ ] Integration tests against a containerized SQL Server
 
 ---
 
 ## 🛡️ License
 
-This project is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE).
