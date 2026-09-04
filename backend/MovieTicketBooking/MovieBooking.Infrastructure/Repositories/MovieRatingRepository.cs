@@ -21,10 +21,10 @@ public class MovieRatingRepository : IMovieRatingRepository
     }
 
     public async Task<MovieRating?> GetByUserAndMovieAsync(Guid userId, Guid movieId)
-        => await _context.MovieRatings.FirstOrDefaultAsync(r => r.UserId == userId && r.MovieId == movieId);
+        => await _context.MovieRatings.AsNoTracking().FirstOrDefaultAsync(r => r.UserId == userId && r.MovieId == movieId);
 
     public async Task<List<MovieRating>> GetByMovieAsync(Guid movieId)
-        => await _context.MovieRatings.Where(r => r.MovieId == movieId).ToListAsync();
+        => await _context.MovieRatings.AsNoTracking().Where(r => r.MovieId == movieId).ToListAsync();
 
     public async Task UpdateAsync(MovieRating rating)
     {
@@ -34,7 +34,7 @@ public class MovieRatingRepository : IMovieRatingRepository
 
     public async Task<decimal> GetAverageRatingAsync(Guid movieId)
     {
-        var ratings = await _context.MovieRatings.Where(r => r.MovieId == movieId).ToListAsync();
+        var ratings = await _context.MovieRatings.AsNoTracking().Where(r => r.MovieId == movieId).ToListAsync();
         return ratings.Count == 0 ? 0 : ratings.Average(r => r.Rating);
     }
 

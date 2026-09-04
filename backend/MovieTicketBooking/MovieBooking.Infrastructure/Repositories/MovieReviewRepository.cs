@@ -25,7 +25,7 @@ public class MovieReviewRepository : IMovieReviewRepository
 
     public async Task<List<MovieReview>> GetByMovieAsync(Guid movieId, bool approvedOnly = true)
     {
-        var query = _context.MovieReviews.Where(r => r.MovieId == movieId);
+        var query = _context.MovieReviews.AsNoTracking().Where(r => r.MovieId == movieId);
         if (approvedOnly) query = query.Where(r => r.IsApproved);
         return await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
     }

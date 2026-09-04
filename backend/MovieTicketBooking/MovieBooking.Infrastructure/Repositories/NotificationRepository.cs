@@ -23,6 +23,7 @@ public class NotificationRepository : INotificationRepository
     public async Task<(List<Notification> Items, int TotalCount)> GetByUserAsync(Guid userId, int page, int pageSize)
     {
         var query = _context.Notifications
+            .AsNoTracking()
             .Where(n => n.UserId == userId)
             .OrderByDescending(n => n.CreatedAt);
 

@@ -24,7 +24,7 @@ public class MovieTrailerRepository : IMovieTrailerRepository
         => await _context.MovieTrailers.FindAsync(id);
 
     public async Task<List<MovieTrailer>> GetByMovieAsync(Guid movieId)
-        => await _context.MovieTrailers.Where(t => t.MovieId == movieId).ToListAsync();
+        => await _context.MovieTrailers.AsNoTracking().Where(t => t.MovieId == movieId).ToListAsync();
 
     public async Task UpdateAsync(MovieTrailer trailer)
     {
