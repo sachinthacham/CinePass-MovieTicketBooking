@@ -24,7 +24,7 @@ public class TheaterImageRepository : ITheaterImageRepository
         => await _context.TheaterImages.FindAsync(id);
 
     public async Task<List<TheaterImage>> GetByTheaterAsync(Guid theaterId)
-        => await _context.TheaterImages.Where(i => i.TheaterId == theaterId).ToListAsync();
+        => await _context.TheaterImages.AsNoTracking().Where(i => i.TheaterId == theaterId).ToListAsync();
 
     public async Task UpdateAsync(TheaterImage image)
     {

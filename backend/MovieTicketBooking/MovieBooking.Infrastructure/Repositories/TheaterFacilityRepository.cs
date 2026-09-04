@@ -21,7 +21,7 @@ public class TheaterFacilityRepository : ITheaterFacilityRepository
     }
 
     public async Task<List<TheaterFacility>> GetByTheaterAsync(Guid theaterId)
-        => await _context.TheaterFacilities.Where(f => f.TheaterId == theaterId).ToListAsync();
+        => await _context.TheaterFacilities.AsNoTracking().Where(f => f.TheaterId == theaterId).ToListAsync();
 
     public async Task<TheaterFacility?> GetByIdAsync(Guid id)
         => await _context.TheaterFacilities.FindAsync(id);

@@ -21,10 +21,10 @@ public class TheaterRatingRepository : ITheaterRatingRepository
     }
 
     public async Task<TheaterRating?> GetByUserAndTheaterAsync(Guid userId, Guid theaterId)
-        => await _context.TheaterRatings.FirstOrDefaultAsync(r => r.UserId == userId && r.TheaterId == theaterId);
+        => await _context.TheaterRatings.AsNoTracking().FirstOrDefaultAsync(r => r.UserId == userId && r.TheaterId == theaterId);
 
     public async Task<List<TheaterRating>> GetByTheaterAsync(Guid theaterId)
-        => await _context.TheaterRatings.Where(r => r.TheaterId == theaterId).OrderByDescending(r => r.CreatedAt).ToListAsync();
+        => await _context.TheaterRatings.AsNoTracking().Where(r => r.TheaterId == theaterId).OrderByDescending(r => r.CreatedAt).ToListAsync();
 
     public async Task UpdateAsync(TheaterRating rating)
     {
@@ -34,7 +34,7 @@ public class TheaterRatingRepository : ITheaterRatingRepository
 
     public async Task<decimal> GetAverageRatingAsync(Guid theaterId)
     {
-        var ratings = await _context.TheaterRatings.Where(r => r.TheaterId == theaterId).ToListAsync();
+        var ratings = await _context.TheaterRatings.AsNoTracking().Where(r => r.TheaterId == theaterId).ToListAsync();
         return ratings.Count == 0 ? 0 : (decimal)ratings.Average(r => (double)r.Rating);
     }
 }

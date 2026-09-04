@@ -23,6 +23,7 @@ public class TheaterRepository : ITheaterRepository
     public async Task<List<Theater>> GetAllAsync(string? city, bool? isActive)
     {
         var query = _context.Theaters
+            .AsNoTracking()
             .Include(t => t.Facilities)
             .Include(t => t.Images)
             .Include(t => t.Screens)
@@ -40,6 +41,7 @@ public class TheaterRepository : ITheaterRepository
 
     public async Task<Theater?> GetByIdAsync(Guid id)
         => await _context.Theaters
+            .AsNoTracking()
             .Include(t => t.Facilities)
             .Include(t => t.Images)
             .Include(t => t.Screens)
@@ -60,12 +62,13 @@ public class TheaterRepository : ITheaterRepository
 
     public async Task<decimal> GetAverageRatingAsync(Guid theaterId)
     {
-        var ratings = await _context.TheaterRatings.Where(r => r.TheaterId == theaterId).ToListAsync();
+        var ratings = await _context.TheaterRatings.AsNoTracking().Where(r => r.TheaterId == theaterId).ToListAsync();
         return ratings.Count == 0 ? 0 : (decimal)ratings.Average(r => (double)r.Rating);
     }
 
     public async Task<List<string>> GetDistinctCitiesAsync()
         => await _context.Theaters
+            .AsNoTracking()
             .Where(t => t.IsActive)
             .Select(t => t.City)
             .Distinct()
