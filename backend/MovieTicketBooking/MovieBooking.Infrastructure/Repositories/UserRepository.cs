@@ -38,6 +38,7 @@ public class UserRepository : IUserRepository
     public async Task<(List<User> Items, int TotalCount)> GetAllAsync(int page, int pageSize, string? search, string? role)
     {
         var query = _context.Users
+            .AsNoTracking()
             .Include(u => u.Bookings)
             .AsQueryable();
 
