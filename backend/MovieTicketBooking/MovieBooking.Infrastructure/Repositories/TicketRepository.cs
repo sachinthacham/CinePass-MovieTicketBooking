@@ -22,12 +22,14 @@ public class TicketRepository : ITicketRepository
 
     public async Task<List<Ticket>> GetByBookingAsync(Guid bookingId)
         => await _context.Tickets
+            .AsNoTracking()
             .Include(t => t.BookingItem)
             .Where(t => t.BookingId == bookingId)
             .ToListAsync();
 
     public async Task<Ticket?> GetByNumberAsync(string ticketNumber)
         => await _context.Tickets
+            .AsNoTracking()
             .Include(t => t.BookingItem)
             .FirstOrDefaultAsync(t => t.TicketNumber == ticketNumber);
 
