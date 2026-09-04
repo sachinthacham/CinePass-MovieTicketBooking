@@ -21,7 +21,7 @@ public class SeatCategoryRepository : ISeatCategoryRepository
     }
 
     public async Task<List<SeatCategory>> GetAllAsync()
-        => await _context.SeatCategories.OrderBy(c => c.Name).ToListAsync();
+        => await _context.SeatCategories.AsNoTracking().OrderBy(c => c.Name).ToListAsync();
 
     public async Task<SeatCategory?> GetByIdAsync(Guid id)
         => await _context.SeatCategories.FindAsync(id);

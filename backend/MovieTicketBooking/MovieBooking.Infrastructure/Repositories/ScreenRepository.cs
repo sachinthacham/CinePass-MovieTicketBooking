@@ -21,10 +21,11 @@ public class ScreenRepository : IScreenRepository
     }
 
     public async Task<List<Screen>> GetByTheaterAsync(Guid theaterId)
-        => await _context.Screens.Where(s => s.TheaterId == theaterId).OrderBy(s => s.Name).ToListAsync();
+        => await _context.Screens.AsNoTracking().Where(s => s.TheaterId == theaterId).OrderBy(s => s.Name).ToListAsync();
 
     public async Task<Screen?> GetByIdAsync(Guid id)
         => await _context.Screens
+            .AsNoTracking()
             .Include(s => s.Theater)
             .FirstOrDefaultAsync(s => s.Id == id);
 
