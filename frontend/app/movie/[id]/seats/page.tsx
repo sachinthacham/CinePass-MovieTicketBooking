@@ -4,8 +4,8 @@ import * as React from 'react'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { ArrowLeft, Monitor, Loader2, Lock } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Monitor, Loader2, Lock, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { showtimesApi } from '@/lib/api/showtimes'
@@ -13,7 +13,8 @@ import { moviesApi } from '@/lib/api/movies'
 import { seatLocksApi } from '@/lib/api/seatLocks'
 import { useAuthStore } from '@/lib/stores/authStore'
 import { useToast } from '@/components/ui/Toast'
-import type { ShowtimeSeat } from '@/lib/types'
+import { useSeatAvailability, type SeatStatusChangedPayload } from '@/lib/hooks/useSeatAvailability'
+import type { ShowtimeSeat, ApiResponse } from '@/lib/types'
 
 interface GroupedCategory {
   name: string
@@ -26,6 +27,7 @@ function SeatSelectionContent() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { isAuthenticated } = useAuthStore()
   const { toast } = useToast()
   const showtimeId = searchParams.get('showtimeId') ?? ''
@@ -54,12 +56,37 @@ function SeatSelectionContent() {
     enabled: Boolean(showtimeId),
   })
 
+  const seatsQueryKey = ['showtime-seats', showtimeId]
   const { data: seatsData, isLoading: loadingSeats, refetch: refetchSeats } = useQuery({
-    queryKey: ['showtime-seats', showtimeId],
+    queryKey: seatsQueryKey,
     queryFn: () => showtimesApi.getSeats(showtimeId),
     enabled: Boolean(showtimeId),
-    refetchInterval: 15000, // Refresh every 15s for real-time
+    // Real-time updates arrive via SignalR (see useSeatAvailability below); this
+    // interval is just a reconciliation fallback in case that connection drops.
+    refetchInterval: 15000,
   })
+
+  // Live seat-status updates: another user locking/booking/releasing a seat shows
+  // up immediately instead of waiting for the next 15s poll.
+  const handleSeatStatusChanged = React.useCallback(
+    (payload: SeatStatusChangedPayload) => {
+      queryClient.setQueryData<ApiResponse<ShowtimeSeat[]>>(seatsQueryKey, (current) => {
+        if (!current?.data) return current
+        return {
+          ...current,
+          data: current.data.map((seat) =>
+            seat.seatId === payload.seatId ? { ...seat, status: payload.status } : seat
+          ),
+        }
+      })
+    },
+    // seatsQueryKey is derived fresh each render from showtimeId; depending on
+    // showtimeId directly keeps this callback stable without an array-identity issue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [queryClient, showtimeId]
+  )
+
+  useSeatAvailability(showtimeId || undefined, handleSeatStatusChanged)
 
   const lockMutation = useMutation({
     mutationFn: (seatIds: string[]) =>
@@ -67,9 +94,15 @@ function SeatSelectionContent() {
     onSuccess: (_, seatIds) => {
       setLockedSeats((prev) => [...new Set([...prev, ...seatIds])])
     },
-    onError: () => {
-      toast({ title: 'Seats unavailable', description: 'One or more seats were taken. Please re-select.', variant: 'destructive' })
-      refetchSeats()
+    onError: (err: unknown) => {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 401) {
+        toast({ title: 'Login required', description: 'Please log in to select seats.', variant: 'destructive' })
+        router.push(`/auth/login?redirect=/movie/${id}/seats?showtimeId=${showtimeId}`)
+      } else {
+        toast({ title: 'Seats unavailable', description: 'One or more seats were taken. Please re-select.', variant: 'destructive' })
+        refetchSeats()
+      }
       setSelectedSeats([])
       setLockedSeats([])
     },
@@ -94,7 +127,7 @@ function SeatSelectionContent() {
 
   const movie = movieData?.data
   const showtime = showtimeData?.data
-  const seats: ShowtimeSeat[] = seatsData?.data ?? []
+  const seats: ShowtimeSeat[] = React.useMemo(() => seatsData?.data ?? [], [seatsData])
 
   const groupedCategories = React.useMemo(() => {
     const categories = new Map<string, GroupedCategory>()
@@ -173,64 +206,32 @@ function SeatSelectionContent() {
     router.push('/checkout')
   }
 
-  const useMockLayout = seats.length === 0 && !loadingSeats && !showtimeId
-  const defaultCategories = [
-    { name: 'RECLINER', price: 450, colorCode: '#a855f7', rows: ['P', 'Q', 'R'] },
-    { name: 'PRIME', price: 250, colorCode: '#3b82f6', rows: ['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'] },
-    { name: 'CLASSIC', price: 150, colorCode: '#22c55e', rows: ['A', 'B', 'C', 'D', 'E', 'F', 'G'] },
-  ]
-  const [mockSelected, setMockSelected] = React.useState<string[]>([])
-  const toggleMockSeat = (seatId: string) => {
-    setMockSelected((prev) =>
-      prev.includes(seatId) ? prev.filter((s) => s !== seatId) : [...prev, seatId]
-    )
-  }
-  const getMockCategory = (row: string) =>
-    defaultCategories.find((c) => c.rows.includes(row)) ?? defaultCategories[2]
-  const mockTotal = mockSelected.reduce((total, seat) => {
-    const row = seat.charAt(0)
-    return total + getMockCategory(row).price
-  }, 0)
-
-  const renderMockRow = (rowLabel: string, seatCount: number) => {
-    const seatEls = []
-    for (let i = 1; i <= seatCount; i++) {
-      const seatId = `${rowLabel}${i}`
-      const isSelected = mockSelected.includes(seatId)
-      const isBooked = (seatId.charCodeAt(0) + i) % 7 === 0
-      seatEls.push(
-        <button
-          key={seatId}
-          disabled={isBooked}
-          onClick={() => toggleMockSeat(seatId)}
-          className={cn(
-            'h-8 w-8 text-xs font-semibold rounded-t-md transition-all flex items-center justify-center border',
-            isBooked
-              ? 'bg-(--muted) border-transparent cursor-not-allowed opacity-50'
-              : isSelected
-              ? 'bg-(--primary) border-(--primary) text-(--primary-foreground) scale-110 shadow-lg'
-              : 'bg-(--background) border-(--border) hover:border-(--primary) hover:bg-(--primary)/10'
-          )}
-        >
-          {isSelected ? i : ''}
-        </button>
-      )
-    }
-    return (
-      <div key={rowLabel} className="flex items-center gap-2">
-        <div className="w-6 text-sm font-semibold text-(--muted-foreground) shrink-0 text-center">{rowLabel}</div>
-        <div className="flex gap-2 flex-1 justify-center">{seatEls}</div>
-      </div>
-    )
-  }
-
   const showtimeLabel = showtime
     ? `${showtime.theaterName} • ${new Date(showtime.startTime).toLocaleString([], {
         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
       })}`
     : 'Select a showtime'
 
-  const activeCount = useMockLayout ? mockSelected.length : selectedSeats.length
+  const activeCount = selectedSeats.length
+
+  // No showtimeId in the URL (bad link, back-button edge case, etc.) — show a
+  // real error state instead of a fabricated seat map.
+  if (!showtimeId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+        <div className="w-16 h-16 rounded-full bg-(--muted) flex items-center justify-center mb-4">
+          <AlertTriangle className="h-8 w-8 text-(--muted-foreground)" />
+        </div>
+        <h1 className="font-(--font-display) text-xl font-bold">No showtime selected</h1>
+        <p className="text-(--muted-foreground) mt-2 max-w-sm">
+          We couldn&apos;t find a showtime for this seat selection. Please pick a showtime again.
+        </p>
+        <Link href={`/movie/${id}/showtimes`} className="mt-6">
+          <Button>Choose a showtime</Button>
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-(--background)">
@@ -269,18 +270,11 @@ function SeatSelectionContent() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-(--muted-foreground)" />
             </div>
-          ) : useMockLayout ? (
-            <div className="w-full max-w-4xl mx-auto space-y-8 pb-32">
-              {[...defaultCategories].reverse().map((category) => (
-                <div key={category.name} className="space-y-4 pt-4 border-t border-(--border)/50 first:border-0 first:pt-0">
-                  <div className="text-xs font-semibold text-(--muted-foreground) tracking-wider text-center">
-                    Rs. {category.price} {category.name}
-                  </div>
-                  <div className="space-y-3">
-                    {category.rows.map((row) => renderMockRow(row, 20))}
-                  </div>
-                </div>
-              ))}
+          ) : seats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <AlertTriangle className="h-10 w-10 text-(--muted-foreground) mb-4" />
+              <p className="font-medium">No seats configured for this showtime.</p>
+              <p className="text-sm text-(--muted-foreground) mt-1">Please choose a different showtime.</p>
             </div>
           ) : (
             <div className="w-full max-w-4xl mx-auto space-y-8 pb-32">
@@ -306,12 +300,16 @@ function SeatSelectionContent() {
                             const isSelected = selectedSeats.includes(seat.id)
                             const isBooked = seat.status === 'Booked' || seat.status === 'Blocked'
                             const isReservedByOther = seat.status === 'Reserved' && !lockedSeats.includes(seat.id)
+                            const seatLabel = `${seat.rowLabel}${seat.seatNumber}`
+                            const statusLabel = isBooked ? 'sold' : isReservedByOther ? 'reserved' : isSelected ? 'selected' : 'available'
                             return (
                               <button
                                 key={seat.id}
                                 disabled={isBooked || isReservedByOther || isLocking}
                                 onClick={() => toggleSeat(seat)}
-                                title={`${seat.rowLabel}${seat.seatNumber} - ${seat.status}`}
+                                title={`${seatLabel} - ${seat.status}`}
+                                aria-label={`Seat ${seatLabel}, ${statusLabel}`}
+                                aria-pressed={isSelected}
                                 className={cn(
                                   'h-8 w-8 text-xs font-semibold rounded-t-md transition-all flex items-center justify-center border',
                                   isBooked
@@ -350,14 +348,12 @@ function SeatSelectionContent() {
                   <div className="flex justify-between items-center text-(--muted-foreground)">
                     <span>Tickets ({activeCount})</span>
                     <span className="font-medium text-(--foreground) text-right max-w-[200px] truncate">
-                      {useMockLayout
-                        ? mockSelected.join(', ')
-                        : selectedSeatDetails.map((s) => `${s.rowLabel}${s.seatNumber}`).join(', ')}
+                      {selectedSeatDetails.map((s) => `${s.rowLabel}${s.seatNumber}`).join(', ')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center bg-(--muted)/50 p-3 rounded-md border border-(--border)">
                     <span className="font-semibold">Subtotal</span>
-                    <span className="font-bold text-lg">Rs. {useMockLayout ? mockTotal : totalAmount}</span>
+                    <span className="font-bold text-lg">Rs. {totalAmount}</span>
                   </div>
                 </div>
               </div>
