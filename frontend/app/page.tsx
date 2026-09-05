@@ -14,6 +14,7 @@ import { theatersApi } from "@/lib/api/theaters";
 import { showFormatsApi } from "@/lib/api/showtimes";
 import { cn } from "@/lib/utils";
 import { getMoviePosterUrl } from "@/lib/utils/posterUrl";
+import { useLocationStore } from "@/lib/stores/locationStore";
 import type { Genre, Language, Movie } from "@/lib/types";
 
 function getHeroMovie(movies: Movie[]) {
@@ -29,7 +30,7 @@ const SORT_OPTIONS = [
 export default function HomePage() {
   const [selectedGenre, setSelectedGenre] = React.useState<string>("");
   const [selectedLanguage, setSelectedLanguage] = React.useState<string>("");
-  const [selectedCity, setSelectedCity] = React.useState<string>("");
+  const { selectedCity, setSelectedCity } = useLocationStore();
   const [selectedFormat, setSelectedFormat] = React.useState<string>("");
   const [sortBy, setSortBy] = React.useState<string>("releaseDate");
   const [showCityDropdown, setShowCityDropdown] = React.useState(false);
@@ -118,7 +119,7 @@ export default function HomePage() {
             <div className="inline-flex rounded-full bg-(--primary)/20 px-3 py-1 text-sm font-semibold text-(--primary)">
               🔥 Now Showing
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="font-(--font-display) text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               {hero?.title ?? "The Best Movies"}
             </h1>
             <p className="max-w-xl text-lg text-(--muted-foreground) md:text-xl">
@@ -397,18 +398,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {nowShowing.map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={{
-                    id: movie.id,
-                    title: movie.title,
-                    posterUrl: getMoviePosterUrl(movie),
-                    rating: movie.averageRating ?? 0,
-                    votes: String(movie.totalRatings),
-                    genre: (movie.genres ?? []).map((g) => g.name),
-                    format: [],
-                  }}
-                />
+                <MovieCard key={movie.id} movie={movie} />
               ))}
             </div>
           )}
@@ -442,24 +432,7 @@ export default function HomePage() {
               {comingSoon.map((movie) => (
                 <MovieCard
                   key={movie.id}
-                  movie={{
-                    id: movie.id,
-                    title: movie.title,
-                    posterUrl: getMoviePosterUrl(movie),
-                    rating: 0,
-                    votes: "0",
-                    genre: (movie.genres ?? []).map((g) => g.name),
-                    format: [],
-                    isComingSoon: true,
-                    releaseDate: new Date(movie.releaseDate).toLocaleDateString(
-                      "en-US",
-                      {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      },
-                    ),
-                  }}
+                  movie={movie}
                 />
               ))}
             </div>
