@@ -4,13 +4,61 @@ import * as React from 'react'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { loadStripe, type Appearance } from '@stripe/stripe-js'
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { ArrowLeft, Clock, MapPin, CreditCard, Loader2, CheckCircle2, Lock, Film } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/stores/authStore'
 import { bookingsApi } from '@/lib/api/bookings'
 import { useToast } from '@/components/ui/Toast'
+import { getApiErrorMessage } from '@/lib/utils/apiError'
 import type { ShowtimeSeat, CreateBookingResult } from '@/lib/types'
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
+
+// Stripe Elements renders in a sandboxed iframe and can't read the page's CSS custom
+// properties, so the site's dark cinema-marquee palette (see globals.css) is
+// hardcoded here to match. The app is always in dark mode (`.dark` is forced on
+// <html> in layout.tsx), so there's only one palette to match, not a light/dark pair.
+const stripeAppearance: Appearance = {
+  theme: 'night',
+  variables: {
+    colorPrimary: '#e3a73f',
+    colorBackground: '#1c140c',
+    colorText: '#f5ead6',
+    colorTextSecondary: '#9c8a6f',
+    colorDanger: '#c0463a',
+    fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif',
+    borderRadius: '8px',
+    spacingUnit: '4px',
+  },
+  rules: {
+    '.Input': {
+      backgroundColor: '#1c140c',
+      border: '1px solid #34281a',
+      boxShadow: 'none',
+    },
+    '.Input:focus': {
+      border: '1px solid #e8b052',
+      boxShadow: '0 0 0 1px #e8b052',
+    },
+    '.Label': {
+      color: '#9c8a6f',
+    },
+    '.Tab': {
+      backgroundColor: '#1c140c',
+      border: '1px solid #34281a',
+    },
+    '.Tab:hover': {
+      backgroundColor: '#241a10',
+    },
+    '.Tab--selected': {
+      backgroundColor: '#241a10',
+      border: '1px solid #e8b052',
+    },
+  },
+}
 
 interface BookingContext {
   movieId: string
@@ -26,19 +74,90 @@ interface BookingContext {
   showFormatName?: string
 }
 
+/** Renders inside <Elements>, so it can use the Stripe hooks to actually charge the card. */
+function StripePaymentForm({ bookingResult }: { bookingResult: CreateBookingResult }) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const router = useRouter()
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!stripe || !elements) return
+
+    setIsSubmitting(true)
+
+    const statusUrl = `/checkout/status?bookingId=${bookingResult.bookingId}&reference=${bookingResult.bookingReference}&amount=${bookingResult.totalAmount}`
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}${statusUrl}`,
+      },
+      // Most card payments resolve inline without a redirect; only payment methods
+      // that require one (rare here) will leave the page.
+      redirect: 'if_required',
+    })
+
+    if (error) {
+      toast({
+        title: 'Payment failed',
+        description: error.message ?? 'Please check your card details and try again.',
+        variant: 'destructive',
+      })
+      setIsSubmitting(false)
+      return
+    }
+
+    if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
+      sessionStorage.removeItem('booking-context')
+      sessionStorage.removeItem('seat-session-id')
+      router.push(statusUrl)
+      return
+    }
+
+    // Requires further action Stripe couldn't resolve inline — treat as a failure
+    // rather than silently leaving the user on a stuck "Processing..." button.
+    toast({
+      title: 'Payment incomplete',
+      description: 'We could not confirm your payment. Please try again.',
+      variant: 'destructive',
+    })
+    setIsSubmitting(false)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <PaymentElement />
+      <div className="flex items-center text-xs text-(--muted-foreground) mt-2">
+        <Lock className="h-3 w-3 mr-1" /> Payments are processed securely by Stripe. We never see your card details.
+      </div>
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full text-base font-bold shadow-xl h-14 mt-2"
+        disabled={!stripe || isSubmitting}
+      >
+        {isSubmitting ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+        ) : (
+          <><CreditCard className="h-5 w-5 mr-2" />Pay Rs. {bookingResult.totalAmount}</>
+        )}
+      </Button>
+    </form>
+  )
+}
+
 function CheckoutContent() {
   const router = useRouter()
   const { user } = useAuthStore()
   const { toast } = useToast()
 
   const [context, setContext] = React.useState<BookingContext | null>(null)
-  const [step, setStep] = React.useState<'review' | 'payment' | 'processing'>('review')
-  const [cardNumber, setCardNumber] = React.useState('')
-  const [cardExpiry, setCardExpiry] = React.useState('')
-  const [cardCvc, setCardCvc] = React.useState('')
-  const [cardName, setCardName] = React.useState(user ? `${user.firstName} ${user.lastName}` : '')
+  const [step, setStep] = React.useState<'review' | 'payment'>('review')
   const [bookingResult, setBookingResult] = React.useState<CreateBookingResult | null>(null)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [isCreatingBooking, setIsCreatingBooking] = React.useState(false)
 
   React.useEffect(() => {
     const stored = sessionStorage.getItem('booking-context')
@@ -53,53 +172,25 @@ function CheckoutContent() {
     }
   }, [router])
 
-  const formatCard = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 16)
-    return digits.replace(/(.{4})/g, '$1 ').trim()
-  }
-
-  const formatExpiry = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 4)
-    if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-    return digits
-  }
-
-  const handleCreateBooking = async () => {
+  const handleProceedToPay = async () => {
     if (!context) return
-    if (!cardNumber || !cardExpiry || !cardCvc || !cardName) {
-      toast({ title: 'Missing card details', description: 'Please fill in all payment fields.', variant: 'destructive' })
-      return
-    }
 
-    setIsSubmitting(true)
-    setStep('processing')
-
+    setIsCreatingBooking(true)
     try {
+      // Creates the Pending booking + a Stripe PaymentIntent server-side; the total
+      // charged is computed from current DB prices, not trusted from this context.
       const response = await bookingsApi.create({
         showtimeId: context.showtimeId,
         seatIds: context.seatIds,
         sessionId: context.sessionId,
       })
-
-      const result = response.data.data
-      setBookingResult(result)
-
-      // In a production app, you would use Stripe.js to confirmPayment with the clientSecret.
-      // For this demo, we simulate payment success by showing a success state.
-      // The Stripe webhook would need to be triggered in production.
-      
-      // Clear session storage
-      sessionStorage.removeItem('booking-context')
-      sessionStorage.removeItem('seat-session-id')
-
-      // Redirect to success page with booking info
-      router.push(`/checkout/status?bookingId=${result.bookingId}&reference=${result.bookingReference}&amount=${result.totalAmount}`)
-    } catch (err: any) {
+      setBookingResult(response.data.data)
       setStep('payment')
-      const message = err?.response?.data?.message || 'Booking failed. Please try again.'
+    } catch (err) {
+      const message = getApiErrorMessage(err, 'Could not start checkout. Please try again.')
       toast({ title: 'Booking failed', description: message, variant: 'destructive' })
     } finally {
-      setIsSubmitting(false)
+      setIsCreatingBooking(false)
     }
   }
 
@@ -112,20 +203,6 @@ function CheckoutContent() {
   }
 
   const totalWithFee = context.totalAmount + Math.round(context.totalAmount * 0.05)
-
-  if (step === 'processing') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-14rem)] space-y-6">
-        <div className="w-20 h-20 rounded-full bg-(--primary)/10 flex items-center justify-center">
-          <Loader2 className="h-10 w-10 animate-spin text-(--primary)" />
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">Processing Payment</h2>
-          <p className="text-(--muted-foreground) mt-2">Please wait while we confirm your booking...</p>
-        </div>
-      </div>
-    )
-  }
 
   const showtimeFormatted = context.showtimeStart
     ? new Date(context.showtimeStart).toLocaleString([], {
@@ -143,7 +220,7 @@ function CheckoutContent() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Checkout</h1>
+          <h1 className="font-(--font-display) text-3xl font-extrabold tracking-tight">Checkout</h1>
           <p className="text-sm text-(--muted-foreground) mt-1">Review your booking and complete payment</p>
         </div>
       </div>
@@ -194,7 +271,7 @@ function CheckoutContent() {
           </section>
 
           {/* Payment Form */}
-          {step === 'payment' ? (
+          {step === 'payment' && bookingResult ? (
             <section className="bg-(--background) border border-(--border) rounded-2xl p-6 md:p-8 space-y-5">
               <h2 className="text-xl font-bold flex items-center">
                 <Lock className="h-5 w-5 mr-2 text-(--primary)" /> Secure Payment
@@ -202,64 +279,12 @@ function CheckoutContent() {
               <p className="text-sm text-(--muted-foreground)">
                 Your payment is encrypted and secure. We use industry-standard SSL encryption.
               </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Cardholder Name</label>
-                  <Input
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    placeholder="John Doe"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Card Number</label>
-                  <Input
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(formatCard(e.target.value))}
-                    placeholder="1234 5678 9012 3456"
-                    maxLength={19}
-                    className="mt-1 font-mono"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Expiry Date</label>
-                    <Input
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      className="mt-1 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">CVC</label>
-                    <Input
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="123"
-                      maxLength={4}
-                      className="mt-1 font-mono"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center text-xs text-(--muted-foreground) mt-2">
-                  <Lock className="h-3 w-3 mr-1" /> All transactions are secure and encrypted.
-                </div>
-              </div>
-              <Button
-                size="lg"
-                className="w-full text-base font-bold shadow-xl h-14 mt-2"
-                onClick={handleCreateBooking}
-                disabled={isSubmitting}
+              <Elements
+                stripe={stripePromise}
+                options={{ clientSecret: bookingResult.stripeClientSecret, appearance: stripeAppearance }}
               >
-                {isSubmitting ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-                ) : (
-                  <><CreditCard className="h-5 w-5 mr-2" />Pay Rs. {totalWithFee}</>
-                )}
-              </Button>
+                <StripePaymentForm bookingResult={bookingResult} />
+              </Elements>
             </section>
           ) : (
             <section className="bg-(--background) border border-(--border) rounded-2xl p-6 md:p-8 space-y-4">
@@ -305,18 +330,23 @@ function CheckoutContent() {
               <Button
                 size="lg"
                 className="w-full text-base font-bold shadow-xl h-14 mt-4"
-                onClick={() => setStep('payment')}
+                onClick={handleProceedToPay}
+                disabled={isCreatingBooking}
               >
-                <CreditCard className="h-5 w-5 mr-2" /> Proceed to Pay
+                {isCreatingBooking ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing checkout...</>
+                ) : (
+                  <><CreditCard className="h-5 w-5 mr-2" /> Proceed to Pay</>
+                )}
               </Button>
             )}
 
             <div className="flex items-center justify-center space-x-2 mt-4">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <CheckCircle2 className="h-4 w-4 text-(--success)" />
               <span className="text-xs text-(--muted-foreground)">Instant booking confirmation</span>
             </div>
             <p className="text-[10px] text-center text-(--muted-foreground) px-2 leading-relaxed">
-              By proceeding, you agree to MovieTick's Terms & Conditions and Cancellation Policy.
+              By proceeding, you agree to MovieTick&apos;s Terms & Conditions and Cancellation Policy.
             </p>
           </div>
         </div>

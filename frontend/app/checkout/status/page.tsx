@@ -26,10 +26,10 @@ function CheckoutStatusContent() {
   if (failed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-14rem)] px-4 text-center">
-        <div className="w-24 h-24 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6">
+        <div className="w-24 h-24 bg-(--destructive)/10 text-(--destructive) rounded-full flex items-center justify-center mb-6">
           <XCircle className="w-12 h-12" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Payment Failed</h1>
+        <h1 className="font-(--font-display) text-3xl font-bold tracking-tight mb-2">Payment Failed</h1>
         <p className="text-(--muted-foreground) max-w-md mx-auto mb-8">
           We couldn't process your payment. Please try again with a different payment method or contact your bank.
         </p>
@@ -67,13 +67,13 @@ function CheckoutStatusContent() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-14rem)] py-12 px-4">
       <div className="w-full max-w-lg bg-(--background) border border-(--border) rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-green-500/20 to-transparent" />
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-(--success)/20 to-transparent" />
 
         <div className="relative z-10 text-center mb-8 pt-4">
-          <div className="w-20 h-20 bg-green-500 text-white shadow-lg shadow-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-(--success) text-(--success-foreground) shadow-lg shadow-(--success)/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Booking Confirmed!</h1>
+          <h1 className="font-(--font-display) text-3xl font-extrabold tracking-tight">Booking Confirmed!</h1>
           <p className="text-sm font-medium text-(--muted-foreground) mt-2">Ref: #{displayReference}</p>
         </div>
 
