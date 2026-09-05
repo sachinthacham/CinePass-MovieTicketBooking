@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { authApi } from '@/lib/api/auth'
 import { establishSession } from '@/lib/auth/establishSession'
+import { getApiErrorMessage } from '@/lib/utils/apiError'
 
 const schema = z.object({
   email: z.string().email('Invalid email address'),
@@ -22,19 +23,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:5050/api/v1'
-
-function getApiErrorMessage(err: unknown): string {
-  const e = err as {
-    response?: { data?: { message?: string; errors?: string[] } }
-    message?: string
-  }
-  const msg =
-    e.response?.data?.errors?.[0] ??
-    e.response?.data?.message ??
-    e.message ??
-    'Invalid email or password'
-  return msg
-}
 
 function LoginForm() {
   const router = useRouter()
@@ -62,7 +50,7 @@ function LoginForm() {
       document.cookie = `auth-role=${role}; path=/; max-age=86400`
       router.push(redirect)
     } catch (err: unknown) {
-      setError('root', { message: getApiErrorMessage(err) })
+      setError('root', { message: getApiErrorMessage(err, 'Invalid email or password') })
     }
   }
 
@@ -98,7 +86,7 @@ function LoginForm() {
                   {...register('email')}
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+                  <p className="mt-1 text-xs text-(--destructive)">{errors.email.message}</p>
                 )}
               </div>
             </div>
@@ -123,14 +111,14 @@ function LoginForm() {
                   {...register('password')}
                 />
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+                  <p className="mt-1 text-xs text-(--destructive)">{errors.password.message}</p>
                 )}
               </div>
             </div>
           </div>
 
           {errors.root && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+            <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
               {errors.root.message}
             </div>
           )}

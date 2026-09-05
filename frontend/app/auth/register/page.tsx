@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { authApi } from '@/lib/api/auth'
 import { establishSession } from '@/lib/auth/establishSession'
+import { getApiErrorMessage } from '@/lib/utils/apiError'
 
 const schema = z
   .object({
@@ -28,18 +29,6 @@ const schema = z
 
 type FormData = z.infer<typeof schema>
 
-function getApiErrorMessage(err: unknown): string {
-  const e = err as {
-    response?: { data?: { message?: string; errors?: string[] } }
-    message?: string
-  }
-  return (
-    e.response?.data?.errors?.[0] ??
-    e.response?.data?.message ??
-    e.message ??
-    'Registration failed. Please try again.'
-  )
-}
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -70,7 +59,7 @@ export default function RegisterPage() {
       document.cookie = `auth-role=${role}; path=/; max-age=86400`
       router.push('/')
     } catch (err: unknown) {
-      setError('root', { message: getApiErrorMessage(err) })
+      setError('root', { message: getApiErrorMessage(err, 'Registration failed. Please try again.') })
     }
   }
 
@@ -95,7 +84,7 @@ export default function RegisterPage() {
               </label>
               <Input id="firstName" placeholder="John" {...register('firstName')} />
               {errors.firstName && (
-                <p className="mt-1 text-xs text-red-500">{errors.firstName.message}</p>
+                <p className="mt-1 text-xs text-(--destructive)">{errors.firstName.message}</p>
               )}
             </div>
             <div>
@@ -104,7 +93,7 @@ export default function RegisterPage() {
               </label>
               <Input id="lastName" placeholder="Smith" {...register('lastName')} />
               {errors.lastName && (
-                <p className="mt-1 text-xs text-red-500">{errors.lastName.message}</p>
+                <p className="mt-1 text-xs text-(--destructive)">{errors.lastName.message}</p>
               )}
             </div>
           </div>
@@ -114,7 +103,7 @@ export default function RegisterPage() {
               Email address
             </label>
             <Input id="email" type="email" placeholder="you@example.com" {...register('email')} />
-            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+            {errors.email && <p className="mt-1 text-xs text-(--destructive)">{errors.email.message}</p>}
           </div>
 
           <div>
@@ -123,7 +112,7 @@ export default function RegisterPage() {
             </label>
             <Input id="password" type="password" {...register('password')} />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+              <p className="mt-1 text-xs text-(--destructive)">{errors.password.message}</p>
             )}
           </div>
 
@@ -133,12 +122,12 @@ export default function RegisterPage() {
             </label>
             <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
             {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-red-500">{errors.confirmPassword.message}</p>
+              <p className="mt-1 text-xs text-(--destructive)">{errors.confirmPassword.message}</p>
             )}
           </div>
 
           {errors.root && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+            <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
               {errors.root.message}
             </div>
           )}

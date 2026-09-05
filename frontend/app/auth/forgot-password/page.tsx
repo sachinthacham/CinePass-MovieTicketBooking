@@ -96,13 +96,13 @@ export default function ForgotPasswordPage() {
                   {...requestForm.register('email')}
                 />
                 {requestForm.formState.errors.email && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {requestForm.formState.errors.email.message}
                   </p>
                 )}
               </div>
               {requestForm.formState.errors.root && (
-                <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+                <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
                   {requestForm.formState.errors.root.message}
                 </div>
               )}
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
                 </label>
                 <Input id="token" placeholder="Paste token here" {...resetForm.register('token')} />
                 {resetForm.formState.errors.token && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {resetForm.formState.errors.token.message}
                   </p>
                 )}
@@ -157,7 +157,7 @@ export default function ForgotPasswordPage() {
                 </label>
                 <Input id="newPassword" type="password" {...resetForm.register('newPassword')} />
                 {resetForm.formState.errors.newPassword && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {resetForm.formState.errors.newPassword.message}
                   </p>
                 )}
@@ -172,13 +172,13 @@ export default function ForgotPasswordPage() {
                   {...resetForm.register('confirmPassword')}
                 />
                 {resetForm.formState.errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {resetForm.formState.errors.confirmPassword.message}
                   </p>
                 )}
               </div>
               {resetForm.formState.errors.root && (
-                <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+                <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
                   {resetForm.formState.errors.root.message}
                 </div>
               )}
@@ -198,7 +198,7 @@ export default function ForgotPasswordPage() {
 
         {step === 'done' && (
           <div className="text-center space-y-4">
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <CheckCircle className="h-16 w-16 text-(--success) mx-auto" />
             <h2 className="text-2xl font-bold">Password Reset!</h2>
             <p className="text-(--muted-foreground)">
               Your password has been successfully reset.
