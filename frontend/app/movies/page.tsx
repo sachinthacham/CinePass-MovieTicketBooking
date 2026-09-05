@@ -11,23 +11,24 @@ import { moviesApi } from '@/lib/api/movies'
 import { genresApi } from '@/lib/api/genres'
 import { languagesApi } from '@/lib/api/languages'
 import { Button } from '@/components/ui/Button'
-import { getMoviePosterUrl } from '@/lib/utils/posterUrl'
 import type { Genre, Language, Movie } from '@/lib/types'
 
 function MoviesBrowseContent() {
   const searchParams = useSearchParams()
   const comingSoonOnly = searchParams.get('comingSoon') === 'true'
+  const searchQuery = searchParams.get('search') ?? ''
 
   const [selectedGenre, setSelectedGenre] = React.useState<string>('')
   const [selectedLanguage, setSelectedLanguage] = React.useState<string>('')
 
   const { data, isLoading } = useQuery({
-    queryKey: ['movies', 'browse', comingSoonOnly, selectedGenre, selectedLanguage],
+    queryKey: ['movies', 'browse', comingSoonOnly, selectedGenre, selectedLanguage, searchQuery],
     queryFn: () =>
       moviesApi.getAll({
         isComingSoon: comingSoonOnly,
         genreId: selectedGenre || undefined,
         languageId: selectedLanguage || undefined,
+        search: searchQuery || undefined,
         pageSize: 48,
       }),
   })
@@ -50,11 +51,13 @@ function MoviesBrowseContent() {
             >
               <ChevronLeft className="h-4 w-4" /> Back to home
             </Link>
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-              {comingSoonOnly ? 'Coming soon' : 'All movies'}
+            <h1 className="font-(--font-display) text-3xl font-bold tracking-tight md:text-4xl">
+              {searchQuery ? `Results for "${searchQuery}"` : comingSoonOnly ? 'Coming soon' : 'All movies'}
             </h1>
             <p className="mt-2 text-(--muted-foreground)">
-              {comingSoonOnly
+              {searchQuery
+                ? `${items.length} movie${items.length === 1 ? '' : 's'} found`
+                : comingSoonOnly
                 ? 'Upcoming releases you can bookmark.'
                 : 'Browse every title currently on sale.'}
             </p>
@@ -120,23 +123,7 @@ function MoviesBrowseContent() {
             {items.map((movie: Movie) => (
               <MovieCard
                 key={movie.id}
-                movie={{
-                  id: movie.id,
-                  title: movie.title,
-                  posterUrl: getMoviePosterUrl(movie),
-                  rating: movie.averageRating ?? 0,
-                  votes: String(movie.totalRatings ?? 0),
-                  genre: (movie.genres ?? []).map((g) => g.name),
-                  format: [],
-                  isComingSoon: movie.isComingSoon,
-                  releaseDate: movie.isComingSoon
-                    ? new Date(movie.releaseDate).toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : undefined,
-                }}
+                movie={movie}
               />
             ))}
           </div>

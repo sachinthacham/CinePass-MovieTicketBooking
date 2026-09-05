@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: var(--font-plex-mono), ui-monospace, "Courier New", monospace;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-marquee: var(--font-bebas), "Arial Narrow", sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
@@ -20,7 +23,16 @@
   
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -34,76 +46,103 @@
 
 @layer base {
   :root {
-    /* Light Mode - soft professional palette */
-    --background: #f7f9fc;
-    --foreground: #0f172a;
+    /* Light Mode - Marquee (cinema gold on warm ivory) */
+    --background: #faf4e8;
+    --foreground: #221809;
 
-    --primary: #4f46e5;
-    --primary-foreground: #ffffff;
+    --primary: #e3a73f;
+    --primary-foreground: #211304;
 
-    --secondary: #e0e7ff;
-    --secondary-foreground: #312e81;
+    --secondary: #fff6e7;
+    --secondary-foreground: #4a3b29;
 
-    --muted: #eef2ff;
-    --muted-foreground: #475569;
+    --muted: #ffffff;
+    --muted-foreground: #8a7a63;
 
-    --accent: #cffafe;
-    --accent-foreground: #0f172a;
+    --accent: #fff6e7;
+    --accent-foreground: #96691c;
 
-    --destructive: #dc2626;
-    --destructive-foreground: #ffffff;
+    --destructive: #c0463a;
+    --destructive-foreground: #fff6ee;
 
-    --border: #dbe3f2;
-    --input: #cbd5e1;
-    --ring: #6366f1;
-    
+    /* Warm-leaning semantic accents — kept off the amber/gold used by --primary,
+       and off a cold/saturated feel, so status badges read as "on brand" rather
+       than a generic dashboard-template palette. */
+    --success: #4a7c3c;
+    --success-foreground: #fff6ee;
+
+    --warning: #b5651d;
+    --warning-foreground: #fff6ee;
+
+    --info: #3d6a8a;
+    --info-foreground: #fff6ee;
+
+    --border: #e7d9bc;
+    --input: #e7d9bc;
+    --ring: #96691c;
+
     --radius: 0.5rem;
   }
-  
+
   /* Dark mode preferred by user */
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: #080d1f;
-      --foreground: #e6ecff;
+      --background: #120d08;
+      --foreground: #f5ead6;
 
-      --primary: #7c83ff;
-      --primary-foreground: #0b1022;
+      --primary: #e3a73f;
+      --primary-foreground: #1b1002;
 
-      --secondary: #18213d;
-      --secondary-foreground: #dbe6ff;
+      --secondary: #241a10;
+      --secondary-foreground: #d8c7ac;
 
-      --muted: #121a33;
-      --muted-foreground: #9eb0d4;
+      --muted: #1c140c;
+      --muted-foreground: #9c8a6f;
 
-      --accent: #1a2b4a;
-      --accent-foreground: #cfe4ff;
+      --accent: #241a10;
+      --accent-foreground: #e8b052;
 
-      --destructive: #ef4444;
-      --destructive-foreground: #ffffff;
+      --destructive: #c0463a;
+      --destructive-foreground: #fff6ee;
 
-      --border: #233154;
-      --input: #1b2745;
-      --ring: #7c83ff;
+      --success: #7cb35e;
+      --success-foreground: #12200a;
+
+      --warning: #e08a3c;
+      --warning-foreground: #1f1005;
+
+      --info: #6fa8c9;
+      --info-foreground: #0a1a22;
+
+      --border: #34281a;
+      --input: #34281a;
+      --ring: #e8b052;
     }
   }
 
   /* Force dark mode for some blocks if we want to ensure it */
   .dark {
-    --background: #080d1f;
-    --foreground: #e6ecff;
-    --primary: #7c83ff;
-    --primary-foreground: #0b1022;
-    --secondary: #18213d;
-    --secondary-foreground: #dbe6ff;
-    --muted: #121a33;
-    --muted-foreground: #9eb0d4;
-    --accent: #1a2b4a;
-    --accent-foreground: #cfe4ff;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --border: #233154;
-    --input: #1b2745;
-    --ring: #7c83ff;
+    --background: #120d08;
+    --foreground: #f5ead6;
+    --primary: #e3a73f;
+    --primary-foreground: #1b1002;
+    --secondary: #241a10;
+    --secondary-foreground: #d8c7ac;
+    --muted: #1c140c;
+    --muted-foreground: #9c8a6f;
+    --accent: #241a10;
+    --accent-foreground: #e8b052;
+    --destructive: #c0463a;
+    --destructive-foreground: #fff6ee;
+    --success: #7cb35e;
+    --success-foreground: #12200a;
+    --warning: #e08a3c;
+    --warning-foreground: #1f1005;
+    --info: #6fa8c9;
+    --info-foreground: #0a1a22;
+    --border: #34281a;
+    --input: #34281a;
+    --ring: #e8b052;
   }
 }
 
@@ -115,8 +154,8 @@
     background-color: var(--background);
     color: var(--foreground);
     background-image:
-      radial-gradient(circle at 0% 0%, rgb(124 131 255 / 0.12), transparent 38%),
-      radial-gradient(circle at 100% 0%, rgb(34 211 238 / 0.1), transparent 32%);
+      radial-gradient(circle at 0% 0%, rgb(227 167 63 / 0.12), transparent 38%),
+      radial-gradient(circle at 100% 0%, rgb(192 70 58 / 0.1), transparent 32%);
     /* Improve font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

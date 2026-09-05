@@ -46,7 +46,7 @@ export default function TheatresPage() {
     <div className="container mx-auto px-4 py-8 md:px-8 max-w-6xl min-h-[calc(100vh-14rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Theatres</h1>
+          <h1 className="font-(--font-display) text-3xl font-bold tracking-tight">Theatres</h1>
           <p className="text-(--muted-foreground) mt-1 flex items-center">
             <MapPin className="mr-1 h-4 w-4" />
             {selectedCity ? selectedCity : 'All Locations'}
@@ -132,7 +132,7 @@ export default function TheatresPage() {
                     {theater.totalScreens} Screen{theater.totalScreens !== 1 ? 's' : ''}
                   </Badge>
                   {theater.averageRating > 0 && (
-                    <div className="flex items-center justify-end text-sm font-medium text-yellow-500">
+                    <div className="flex items-center justify-end text-sm font-medium text-(--primary)">
                       <Star className="h-4 w-4 fill-current mr-1" />
                       {theater.averageRating.toFixed(1)}
                     </div>

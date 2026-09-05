@@ -70,7 +70,7 @@ export default function ShowtimesPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">{movie?.title ?? 'Movie Showtimes'}</h1>
+          <h1 className="font-(--font-display) text-2xl font-bold">{movie?.title ?? 'Movie Showtimes'}</h1>
           <p className="text-(--muted-foreground) text-sm mt-1">Select a date and showtime</p>
         </div>
       </div>

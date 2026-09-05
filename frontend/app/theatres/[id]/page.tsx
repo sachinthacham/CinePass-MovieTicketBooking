@@ -61,7 +61,7 @@ export default function TheatreShowtimesPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">{theater?.name ?? 'Theatre'}</h1>
+          <h1 className="font-(--font-display) text-2xl font-bold">{theater?.name ?? 'Theatre'}</h1>
           {theater && (
             <p className="text-sm text-(--muted-foreground) mt-1 flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />

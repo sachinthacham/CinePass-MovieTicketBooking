@@ -4,7 +4,8 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Play, Star, Clock, Share2, Heart, Calendar, Loader2 } from 'lucide-react'
+import { Play, Star, Clock, Share2, Heart, Calendar, Loader2, AlertTriangle } from 'lucide-react'
+import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
@@ -61,7 +62,22 @@ export default function MovieDetailsPage() {
   }
 
   const movie = movieData?.data
-  if (!movie) return null
+  if (!movie) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+        <div className="w-16 h-16 rounded-full bg-(--muted) flex items-center justify-center mb-4">
+          <AlertTriangle className="h-8 w-8 text-(--muted-foreground)" />
+        </div>
+        <h1 className="font-(--font-display) text-xl font-bold">Movie not found</h1>
+        <p className="text-(--muted-foreground) mt-2 max-w-sm">
+          This movie may have been removed or the link is incorrect.
+        </p>
+        <Link href="/movies" className="mt-6">
+          <Button>Browse movies</Button>
+        </Link>
+      </div>
+    )
+  }
 
   const uploadsBase = getUploadsBase()
   const primaryPoster = movie.posters?.find((p) => p.isPrimary) ?? movie.posters?.[0]
@@ -89,14 +105,14 @@ export default function MovieDetailsPage() {
         <div className="container relative z-10 mx-auto px-4 md:px-8">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="shrink-0">
-              <div className="overflow-hidden rounded-xl shadow-2xl bg-(--muted) w-64 md:w-72 aspect-[2/3]">
-                <img src={posterUrl} alt={movie.title} className="w-full h-full object-cover" />
+              <div className="relative overflow-hidden rounded-xl shadow-2xl bg-(--muted) w-64 md:w-72 aspect-[2/3]">
+                <Image src={posterUrl} alt={movie.title} fill sizes="288px" className="object-cover" priority />
               </div>
             </div>
 
             <div className="flex-1 text-white space-y-6 text-center md:text-left">
               <div>
-                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">{movie.title}</h1>
+                <h1 className="font-(--font-display) text-3xl md:text-5xl font-extrabold tracking-tight">{movie.title}</h1>
                 {movie.certificateRating && (
                   <span className="inline-block mt-2 px-2 py-0.5 border border-white/40 text-xs text-white/70 rounded">
                     {movie.certificateRating}
@@ -106,7 +122,7 @@ export default function MovieDetailsPage() {
 
               <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/10 p-4 rounded-xl backdrop-blur-md w-fit mx-auto md:mx-0">
                 <div className="flex items-center space-x-2">
-                  <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-6 w-6 text-(--primary) fill-(--primary)" />
                   <span className="text-2xl font-bold">
                     {movie.averageRating != null ? movie.averageRating.toFixed(1) : '—'}/10
                   </span>
