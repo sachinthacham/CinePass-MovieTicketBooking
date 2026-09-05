@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r border-(--border) bg-(--background) flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
         <div className="p-4 border-b border-(--border)">
-          <p className="text-xs font-semibold text-(--muted-foreground) uppercase tracking-wider mb-1">
+          <p className="font-(--font-marquee) text-xs text-(--muted-foreground) uppercase tracking-wider mb-1">
             Admin Panel
           </p>
           <p className="font-semibold text-sm truncate">
@@ -83,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 p-3 space-y-6">
           {navSections.map((section) => (
             <div key={section.title}>
-              <p className="text-xs font-semibold text-(--muted-foreground) uppercase tracking-wider px-3 mb-2">
+              <p className="font-(--font-marquee) text-xs text-(--muted-foreground) uppercase tracking-wider px-3 mb-2">
                 {section.title}
               </p>
               <div className="space-y-1">
@@ -120,7 +120,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <Button
             variant="ghost"
-            className="w-full justify-start h-9 text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            className="w-full justify-start h-9 text-sm text-(--destructive) hover:text-(--destructive) hover:bg-(--destructive)/10"
             onClick={handleLogout}
           >
             <LogOut className="mr-3 h-4 w-4" />

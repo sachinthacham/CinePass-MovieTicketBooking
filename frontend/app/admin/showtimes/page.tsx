@@ -18,6 +18,8 @@ import { theatersApi } from '@/lib/api/theaters'
 import { languagesApi } from '@/lib/api/languages'
 import { screensApi } from '@/lib/api/screens'
 import { seatCategoriesApi } from '@/lib/api/seats'
+import { cn } from '@/lib/utils'
+import { statusBadgeClass, type StatusTone } from '@/lib/utils/statusBadge'
 import type { Showtime } from '@/lib/types'
 
 const showtimeSchema = z.object({
@@ -135,12 +137,12 @@ export default function AdminShowtimesPage() {
   const onSubmit = (d: ShowtimeFormData) => createMutation.mutate(d)
 
   const statusBadge = (status: Showtime['status']) => {
-    const map = {
-      Scheduled: 'bg-green-500/20 text-green-600',
-      Cancelled: 'bg-red-500/20 text-red-600',
-      Completed: 'bg-(--muted) text-(--muted-foreground)',
+    const tone: Record<Showtime['status'], StatusTone> = {
+      Scheduled: 'success',
+      Cancelled: 'destructive',
+      Completed: 'neutral',
     }
-    return <Badge variant="secondary" className={`text-xs ${map[status]}`}>{status}</Badge>
+    return <Badge variant="secondary" className={cn('text-xs', statusBadgeClass(tone[status]))}>{status}</Badge>
   }
 
   const columns = [
@@ -187,7 +189,7 @@ export default function AdminShowtimesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Showtimes</h1>
+          <h1 className="font-(--font-display) text-3xl font-bold">Showtimes</h1>
           <p className="text-(--muted-foreground) mt-1">Schedule and manage movie showtimes</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
@@ -227,7 +229,7 @@ export default function AdminShowtimesPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-red-500"
+                className="text-(--destructive)"
                 onClick={() => { if (confirm('Cancel showtime?')) cancelMutation.mutate(st.id) }}
               >
                 <XCircle className="h-4 w-4 mr-1" />Cancel
@@ -246,7 +248,7 @@ export default function AdminShowtimesPage() {
               <option value="">Select movie...</option>
               {movies.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
             </select>
-            {errors.movieId && <p className="mt-1 text-xs text-red-500">{errors.movieId.message}</p>}
+            {errors.movieId && <p className="mt-1 text-xs text-(--destructive)">{errors.movieId.message}</p>}
           </div>
 
           <div>
@@ -271,7 +273,7 @@ export default function AdminShowtimesPage() {
               <option value="">Select screen...</option>
               {screens.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            {errors.screenId && <p className="mt-1 text-xs text-red-500">{errors.screenId.message}</p>}
+            {errors.screenId && <p className="mt-1 text-xs text-(--destructive)">{errors.screenId.message}</p>}
           </div>
 
           <div>
@@ -282,7 +284,7 @@ export default function AdminShowtimesPage() {
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
-            {errors.showFormatId && <p className="mt-1 text-xs text-red-500">{errors.showFormatId.message}</p>}
+            {errors.showFormatId && <p className="mt-1 text-xs text-(--destructive)">{errors.showFormatId.message}</p>}
           </div>
 
           <div>
@@ -293,13 +295,13 @@ export default function AdminShowtimesPage() {
                 <option key={lang.id} value={lang.id}>{lang.name}</option>
               ))}
             </select>
-            {errors.languageId && <p className="mt-1 text-xs text-red-500">{errors.languageId.message}</p>}
+            {errors.languageId && <p className="mt-1 text-xs text-(--destructive)">{errors.languageId.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">Start Date & Time *</label>
             <Input type="datetime-local" {...register('startTime')} />
-            {errors.startTime && <p className="mt-1 text-xs text-red-500">{errors.startTime.message}</p>}
+            {errors.startTime && <p className="mt-1 text-xs text-(--destructive)">{errors.startTime.message}</p>}
           </div>
 
           {fields.length > 0 && (

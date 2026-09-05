@@ -18,6 +18,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { moviesApi } from '@/lib/api/movies'
 import { genresApi } from '@/lib/api/genres'
 import { languagesApi } from '@/lib/api/languages'
+import { cn } from '@/lib/utils'
+import { statusBadgeClass } from '@/lib/utils/statusBadge'
 import type { Movie, Genre, Language, MovieReview } from '@/lib/types'
 
 const movieSchema = z.object({
@@ -149,7 +151,7 @@ export default function AdminMoviesPage() {
       header: 'Rating',
       render: (m: Movie) => (
         <span className="flex items-center gap-1">
-          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+          <Star className="h-3 w-3 text-(--primary) fill-(--primary)" />
           {m.averageRating != null ? m.averageRating.toFixed(1) : '—'}
         </span>
       ),
@@ -159,9 +161,9 @@ export default function AdminMoviesPage() {
       header: 'Status',
       render: (m: Movie) => (
         <div className="flex gap-1 flex-wrap">
-          {m.isFeatured && <Badge variant="secondary" className="text-xs bg-yellow-500/20 text-yellow-600">Featured</Badge>}
-          {m.isComingSoon && <Badge variant="secondary" className="text-xs bg-blue-500/20 text-blue-600">Coming Soon</Badge>}
-          {m.isActive && <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-600">Active</Badge>}
+          {m.isFeatured && <Badge variant="secondary" className={cn('text-xs', statusBadgeClass('warning'))}>Featured</Badge>}
+          {m.isComingSoon && <Badge variant="secondary" className={cn('text-xs', statusBadgeClass('info'))}>Coming Soon</Badge>}
+          {m.isActive && <Badge variant="secondary" className={cn('text-xs', statusBadgeClass('success'))}>Active</Badge>}
         </div>
       ),
     },
@@ -171,7 +173,7 @@ export default function AdminMoviesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Movies</h1>
+          <h1 className="font-(--font-display) text-3xl font-bold">Movies</h1>
           <p className="text-(--muted-foreground) mt-1">Manage your movie catalog</p>
         </div>
         <Button onClick={openCreate}>
@@ -198,7 +200,7 @@ export default function AdminMoviesPage() {
               title="Toggle Featured"
               onClick={() => toggleFeaturedMutation.mutate(movie.id)}
             >
-              <Star className={`h-4 w-4 ${movie.isFeatured ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+              <Star className={`h-4 w-4 ${movie.isFeatured ? 'text-(--primary) fill-(--primary)' : ''}`} />
             </Button>
             <Button
               variant="ghost"
@@ -217,7 +219,7 @@ export default function AdminMoviesPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-red-500 hover:text-red-600"
+              className="text-(--destructive) hover:text-(--destructive)"
               onClick={() => {
                 if (confirm('Delete this movie?')) deleteMutation.mutate(movie.id)
               }}
@@ -239,7 +241,7 @@ export default function AdminMoviesPage() {
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Title *</label>
               <Input {...register('title')} />
-              {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>}
+              {errors.title && <p className="mt-1 text-xs text-(--destructive)">{errors.title.message}</p>}
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Description</label>
@@ -251,12 +253,12 @@ export default function AdminMoviesPage() {
             <div>
               <label className="block text-sm font-medium mb-1">Duration (minutes) *</label>
               <Input type="number" {...register('durationMinutes')} />
-              {errors.durationMinutes && <p className="mt-1 text-xs text-red-500">{errors.durationMinutes.message}</p>}
+              {errors.durationMinutes && <p className="mt-1 text-xs text-(--destructive)">{errors.durationMinutes.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Release Date *</label>
               <Input type="date" {...register('releaseDate')} />
-              {errors.releaseDate && <p className="mt-1 text-xs text-red-500">{errors.releaseDate.message}</p>}
+              {errors.releaseDate && <p className="mt-1 text-xs text-(--destructive)">{errors.releaseDate.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Director</label>
@@ -471,7 +473,7 @@ function ManageMovieModal({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-500"
+                    className="text-(--destructive)"
                     onClick={() => deleteTrailerMutation.mutate(t.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -512,12 +514,12 @@ function ManageMovieModal({
                   <img src={p.imageUrl ?? p.url} alt="Poster" className="w-full h-full object-cover" />
                   <button
                     onClick={() => deletePosterMutation.mutate(p.id)}
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-(--destructive) text-(--destructive-foreground) flex items-center justify-center hover:bg-(--destructive)/90"
                   >
                     <X className="h-3 w-3" />
                   </button>
                   {p.isPrimary && (
-                    <span className="absolute bottom-1 left-1 text-xs bg-yellow-500 text-black px-1 rounded font-semibold">
+                    <span className="absolute bottom-1 left-1 text-xs bg-(--primary) text-(--primary-foreground) px-1 rounded font-semibold">
                       Primary
                     </span>
                   )}
@@ -544,7 +546,7 @@ function ManageMovieModal({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-green-500 border-green-500/30 h-7 text-xs"
+                          className={cn('h-7 text-xs', statusBadgeClass('success'))}
                           onClick={() => approveReviewMutation.mutate(review.id)}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" /> Approve
@@ -553,7 +555,7 @@ function ManageMovieModal({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-red-500 h-7 w-7"
+                        className="text-(--destructive) h-7 w-7"
                         onClick={() => deleteReviewMutation.mutate(review.id)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -563,7 +565,7 @@ function ManageMovieModal({
                   <p className="text-sm text-(--muted-foreground)">{review.content}</p>
                   <Badge
                     variant="secondary"
-                    className={review.isApproved ? 'bg-green-500/20 text-green-600' : 'bg-yellow-500/20 text-yellow-600'}
+                    className={statusBadgeClass(review.isApproved ? 'success' : 'warning')}
                   >
                     {review.isApproved ? 'Approved' : 'Pending'}
                   </Badge>

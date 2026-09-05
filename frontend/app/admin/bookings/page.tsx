@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/Input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Search, XCircle, Eye, AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { statusBadgeClass, type StatusTone } from "@/lib/utils/statusBadge";
 
-const STATUS_COLORS: Record<BookingStatus, string> = {
-  Confirmed: "bg-green-500/10 text-green-600 border-green-500/20",
-  Pending: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  Cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
-  Refunded: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  Expired: "bg-(--muted) text-(--muted-foreground) border-(--border)",
+const STATUS_TONE: Record<BookingStatus, StatusTone> = {
+  Confirmed: "success",
+  Pending: "warning",
+  Cancelled: "destructive",
+  Refunded: "info",
+  Expired: "neutral",
 };
 
 function StatusBadge({ status }: { status: BookingStatus }) {
@@ -25,7 +26,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
     <span
       className={cn(
         "text-xs font-bold px-2 py-1 rounded border",
-        STATUS_COLORS[status] ?? "bg-(--muted)"
+        statusBadgeClass(STATUS_TONE[status] ?? "neutral")
       )}
     >
       {status}
@@ -140,8 +141,8 @@ function BookingDetailModal({
         </div>
 
         {booking.cancellationReason && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm">
-            <p className="font-medium text-red-600">Cancellation Reason:</p>
+          <div className="p-3 bg-(--destructive)/10 border border-(--destructive)/20 rounded-xl text-sm">
+            <p className="font-medium text-(--destructive)">Cancellation Reason:</p>
             <p className="text-(--muted-foreground) mt-1">
               {booking.cancellationReason}
             </p>
@@ -190,7 +191,7 @@ function BookingDetailModal({
             ) : (
               <Button
                 variant="outline"
-                className="w-full text-red-500 border-red-500/30 hover:bg-red-500/10"
+                className="w-full text-(--destructive) border-(--destructive)/30 hover:bg-(--destructive)/10"
                 onClick={() => setShowCancel(true)}
               >
                 <XCircle className="h-4 w-4 mr-2" /> Cancel Booking
@@ -214,34 +215,38 @@ const STATUS_FILTERS = [
 
 export default function AdminBookingsPage() {
   const [search, setSearch] = React.useState("");
+  const [debouncedSearch, setDebouncedSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [page, setPage] = React.useState(1);
   const [selectedBooking, setSelectedBooking] = React.useState<Booking | null>(
     null
   );
+
+  // Debounce the search box so it filters server-side (across all pages, not
+  // just the current one) without firing a request on every keystroke.
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [statusFilter, debouncedSearch]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-bookings", statusFilter, page],
+    queryKey: ["admin-bookings", statusFilter, page, debouncedSearch],
     queryFn: () =>
       bookingsApi.adminGetAll({
         page,
         pageSize: 15,
         status: statusFilter !== "All" ? statusFilter : undefined,
+        search: debouncedSearch || undefined,
       }),
   });
 
   const bookings: Booking[] = data?.data?.data?.items ?? [];
   const totalCount = data?.data?.data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / 15);
-
-  const filtered = search
-    ? bookings.filter(
-        (b) =>
-          b.bookingReference.toLowerCase().includes(search.toLowerCase()) ||
-          b.movieTitle.toLowerCase().includes(search.toLowerCase()) ||
-          b.userName.toLowerCase().includes(search.toLowerCase()) ||
-          b.userEmail.toLowerCase().includes(search.toLowerCase())
-      )
-    : bookings;
 
   const columns = [
     {
@@ -308,7 +313,7 @@ export default function AdminBookingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="font-(--font-display) text-2xl font-bold tracking-tight">
           Booking Management
         </h1>
         <p className="text-(--muted-foreground) text-sm mt-1">
@@ -350,7 +355,7 @@ export default function AdminBookingsPage() {
 
       <DataTable
         columns={columns}
-        data={filtered}
+        data={bookings}
         isLoading={isLoading}
         emptyMessage="No bookings found."
         currentPage={page}

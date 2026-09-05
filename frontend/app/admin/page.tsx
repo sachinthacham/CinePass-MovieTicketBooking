@@ -5,19 +5,20 @@ import { Film, Building2, CalendarRange, Star } from 'lucide-react'
 import { moviesApi } from '@/lib/api/movies'
 import { theatersApi } from '@/lib/api/theaters'
 import { showtimesApi } from '@/lib/api/showtimes'
+import { cn } from '@/lib/utils'
+import { statusBadgeClass } from '@/lib/utils/statusBadge'
 
 interface StatCardProps {
   title: string
   value: string | number
   sub?: string
   icon: React.ReactNode
-  color: string
 }
 
-function StatCard({ title, value, sub, icon, color }: StatCardProps) {
+function StatCard({ title, value, sub, icon }: StatCardProps) {
   return (
-    <div className={`rounded-2xl border border-(--border) p-6 bg-(--background) flex items-center gap-4`}>
-      <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${color}`}>
+    <div className="rounded-2xl border border-(--border) p-6 bg-(--background) flex items-center gap-4">
+      <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-(--primary)/10">
         {icon}
       </div>
       <div>
@@ -50,33 +51,32 @@ export default function AdminDashboard() {
     queryFn: () => moviesApi.getAll({ isFeatured: true, pageSize: 1 }),
   })
 
+  // All four chips share the brand accent rather than a different hue each —
+  // a single-color icon set reads as "branded dashboard," four competing hues
+  // reads as a generic admin template.
   const stats = [
     {
       title: 'Total Movies',
       value: moviesData?.data?.totalCount ?? '—',
-      icon: <Film className="h-6 w-6 text-blue-600" />,
-      color: 'bg-blue-500/10',
+      icon: <Film className="h-6 w-6 text-(--primary)" />,
       sub: 'In database',
     },
     {
       title: 'Theaters',
       value: theatersData?.data?.totalCount ?? '—',
-      icon: <Building2 className="h-6 w-6 text-green-600" />,
-      color: 'bg-green-500/10',
+      icon: <Building2 className="h-6 w-6 text-(--primary)" />,
       sub: 'Active venues',
     },
     {
       title: 'Showtimes',
       value: showtimesData?.data ?? '—',
-      icon: <CalendarRange className="h-6 w-6 text-purple-600" />,
-      color: 'bg-purple-500/10',
+      icon: <CalendarRange className="h-6 w-6 text-(--primary)" />,
       sub: 'Scheduled',
     },
     {
       title: 'Featured Movies',
       value: featuredData?.data?.totalCount ?? '—',
-      icon: <Star className="h-6 w-6 text-yellow-600" />,
-      color: 'bg-yellow-500/10',
+      icon: <Star className="h-6 w-6 text-(--primary)" />,
       sub: 'On homepage',
     },
   ]
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <h1 className="font-(--font-display) text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-(--muted-foreground) mt-1">Overview of your movie booking platform</p>
       </div>
 
@@ -112,7 +112,7 @@ function RecentMovies() {
 
   return (
     <div className="border border-(--border) rounded-2xl p-6">
-      <h2 className="font-bold text-lg mb-4">Recent Movies</h2>
+      <h2 className="font-(--font-display) font-bold text-lg mb-4">Recent Movies</h2>
       {movies.length === 0 ? (
         <p className="text-(--muted-foreground) text-sm text-center py-6">No movies yet.</p>
       ) : (
@@ -127,12 +127,12 @@ function RecentMovies() {
               </div>
               <div className="text-right">
                 {movie.isFeatured && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 font-medium">
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', statusBadgeClass('warning'))}>
                     Featured
                   </span>
                 )}
                 {movie.isComingSoon && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 font-medium">
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', statusBadgeClass('info'))}>
                     Coming Soon
                   </span>
                 )}
@@ -155,7 +155,7 @@ function RecentShowtimes() {
 
   return (
     <div className="border border-(--border) rounded-2xl p-6">
-      <h2 className="font-bold text-lg mb-4">Recent Showtimes</h2>
+      <h2 className="font-(--font-display) font-bold text-lg mb-4">Recent Showtimes</h2>
       {showtimes.length === 0 ? (
         <p className="text-(--muted-foreground) text-sm text-center py-6">No showtimes yet.</p>
       ) : (

@@ -113,7 +113,7 @@ export default function AdminTheatersPage() {
       header: 'Rating',
       render: (t: Theater) => (
         <span className="flex items-center gap-1">
-          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+          <Star className="h-3 w-3 text-(--primary) fill-(--primary)" />
           {t.averageRating.toFixed(1)}
         </span>
       ),
@@ -124,7 +124,7 @@ export default function AdminTheatersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Theaters</h1>
+          <h1 className="font-(--font-display) text-3xl font-bold">Theaters</h1>
           <p className="text-(--muted-foreground) mt-1">Manage venues and screens</p>
         </div>
         <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Add Theater</Button>
@@ -142,7 +142,7 @@ export default function AdminTheatersPage() {
             <Button variant="ghost" size="sm" onClick={() => setManaging(t)}>Manage</Button>
             <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
             <Button
-              variant="ghost" size="icon" className="text-red-500"
+              variant="ghost" size="icon" className="text-(--destructive)"
               onClick={() => { if (confirm('Delete theater?')) deleteMutation.mutate(t.id) }}
             ><Trash2 className="h-4 w-4" /></Button>
           </>
@@ -156,17 +156,17 @@ export default function AdminTheatersPage() {
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Name *</label>
               <Input {...register('name')} />
-              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+              {errors.name && <p className="mt-1 text-xs text-(--destructive)">{errors.name.message}</p>}
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Address *</label>
               <Input {...register('address')} />
-              {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address.message}</p>}
+              {errors.address && <p className="mt-1 text-xs text-(--destructive)">{errors.address.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">City *</label>
               <Input {...register('city')} />
-              {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city.message}</p>}
+              {errors.city && <p className="mt-1 text-xs text-(--destructive)">{errors.city.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">State *</label>
@@ -290,7 +290,7 @@ function ManageTheaterModal({ theater, onClose }: { theater: Theater; onClose: (
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Input placeholder="Name (e.g. Screen 1)" {...screenForm.register('name')} />
-                  {screenForm.formState.errors.name && <p className="text-xs text-red-500 mt-1">{screenForm.formState.errors.name.message}</p>}
+                  {screenForm.formState.errors.name && <p className="text-xs text-(--destructive) mt-1">{screenForm.formState.errors.name.message}</p>}
                 </div>
                 <Input type="number" placeholder="Rows" {...screenForm.register('totalRows')} />
                 <Input type="number" placeholder="Columns" {...screenForm.register('totalColumns')} />
@@ -307,7 +307,7 @@ function ManageTheaterModal({ theater, onClose }: { theater: Theater; onClose: (
                     <p className="font-medium text-sm">{s.name}</p>
                     <p className="text-xs text-(--muted-foreground)">{s.totalRows} rows × {s.totalColumns} cols • {s.totalSeats} seats</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => deleteScreenMutation.mutate(s.id)}>
+                  <Button variant="ghost" size="icon" className="text-(--destructive)" onClick={() => deleteScreenMutation.mutate(s.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -336,7 +336,7 @@ function ManageTheaterModal({ theater, onClose }: { theater: Theater; onClose: (
                       <p className="text-xs text-(--muted-foreground)">Base: Rs. {c.basePrice}</p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => deleteCatMutation.mutate(c.id)}>
+                  <Button variant="ghost" size="icon" className="text-(--destructive)" onClick={() => deleteCatMutation.mutate(c.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -355,7 +355,7 @@ function ManageTheaterModal({ theater, onClose }: { theater: Theater; onClose: (
               {theater.facilities?.map((f) => (
                 <span key={f.id} className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full border border-(--border) bg-(--muted)">
                   {f.name}
-                  <button onClick={() => deleteFacilityMutation.mutate(f.id)} className="ml-1 text-(--muted-foreground) hover:text-red-500">
+                  <button onClick={() => deleteFacilityMutation.mutate(f.id)} className="ml-1 text-(--muted-foreground) hover:text-(--destructive)">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -378,7 +378,7 @@ function ManageTheaterModal({ theater, onClose }: { theater: Theater; onClose: (
                 <div key={img.id} className="relative rounded-lg overflow-hidden aspect-video bg-(--muted)">
                   <img src={img.url} alt={img.caption ?? 'Theater'} className="w-full h-full object-cover" />
                   <button onClick={() => deleteImageMutation.mutate(img.id)}
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600">
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-(--destructive) text-(--destructive-foreground) flex items-center justify-center hover:bg-(--destructive)/90">
                     <X className="h-3 w-3" />
                   </button>
                 </div>

@@ -10,6 +10,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { adminUsersApi } from '@/lib/api/adminUsers'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
+import { statusBadgeClass } from '@/lib/utils/statusBadge'
 import type { UserAdmin } from '@/lib/types'
 
 const ROLES = ['All', 'Admin', 'User']
@@ -64,7 +65,7 @@ function UserDetailModal({ user, onClose }: { user: UserAdmin; onClose: () => vo
             <div className="flex items-center gap-2 mt-1">
               <span className={cn(
                 'text-xs px-2 py-0.5 rounded-full font-medium',
-                user.isActive ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
+                statusBadgeClass(user.isActive ? 'success' : 'destructive')
               )}>
                 {user.isActive ? 'Active' : 'Inactive'}
               </span>
@@ -131,8 +132,8 @@ function UserDetailModal({ user, onClose }: { user: UserAdmin; onClose: () => vo
             className={cn(
               'w-full',
               user.isActive
-                ? 'text-red-500 border-red-500/30 hover:bg-red-500/10'
-                : 'text-green-600 border-green-500/30 hover:bg-green-500/10'
+                ? 'text-(--destructive) border-(--destructive)/30 hover:bg-(--destructive)/10'
+                : 'text-(--success) border-(--success)/30 hover:bg-(--success)/10'
             )}
             onClick={() => toggleActiveMutation.mutate()}
             disabled={toggleActiveMutation.isPending}
@@ -205,7 +206,7 @@ export default function AdminUsersPage() {
         <span className={cn(
           'text-xs px-2 py-1 rounded border font-medium',
           u.role === 'Admin'
-            ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+            ? 'bg-(--primary)/10 text-(--primary) border-(--primary)/20'
             : 'bg-(--muted) text-(--muted-foreground) border-(--border)'
         )}>
           {u.role}
@@ -219,8 +220,8 @@ export default function AdminUsersPage() {
         <span className={cn(
           'text-xs px-2 py-1 rounded border font-medium',
           u.isActive
-            ? 'bg-green-500/10 text-green-600 border-green-500/20'
-            : 'bg-red-500/10 text-red-600 border-red-500/20'
+            ? 'bg-(--success)/10 text-(--success) border-(--success)/20'
+            : 'bg-(--destructive)/10 text-(--destructive) border-(--destructive)/20'
         )}>
           {u.isActive ? 'Active' : 'Inactive'}
         </span>
@@ -250,7 +251,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
+        <h1 className="font-(--font-display) text-2xl font-bold tracking-tight">User Management</h1>
         <p className="text-(--muted-foreground) text-sm mt-1">
           {totalCount} registered user{totalCount !== 1 ? 's' : ''}
         </p>

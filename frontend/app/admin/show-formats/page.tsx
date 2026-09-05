@@ -66,7 +66,7 @@ export default function AdminShowFormatsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Show Formats</h1>
+          <h1 className="font-(--font-display) text-3xl font-bold">Show Formats</h1>
           <p className="text-(--muted-foreground) mt-1">Manage IMAX, 4DX, 2D, 3D and other formats</p>
         </div>
         <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Add Format</Button>
@@ -80,7 +80,7 @@ export default function AdminShowFormatsPage() {
           <>
             <Button variant="ghost" size="icon" onClick={() => openEdit(f)}><Pencil className="h-4 w-4" /></Button>
             <Button
-              variant="ghost" size="icon" className="text-red-500"
+              variant="ghost" size="icon" className="text-(--destructive)"
               onClick={() => { if (confirm('Delete format?')) deleteMutation.mutate(f.id) }}
             ><Trash2 className="h-4 w-4" /></Button>
           </>
@@ -92,7 +92,7 @@ export default function AdminShowFormatsPage() {
           <div>
             <label className="block text-sm font-medium mb-1">Name *</label>
             <Input placeholder="IMAX 3D, 4DX, 2D..." {...register('name')} />
-            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+            {errors.name && <p className="mt-1 text-xs text-(--destructive)">{errors.name.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
