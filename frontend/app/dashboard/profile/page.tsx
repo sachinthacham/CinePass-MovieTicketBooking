@@ -115,7 +115,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Profile Settings</h1>
+        <h1 className="font-(--font-display) text-2xl font-bold">Profile Settings</h1>
         <p className="text-(--muted-foreground) text-sm mt-1">Manage your account information</p>
       </div>
 
@@ -188,7 +188,7 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium mb-2">First Name</label>
                 <Input {...profileForm.register('firstName')} />
                 {profileForm.formState.errors.firstName && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {profileForm.formState.errors.firstName.message}
                   </p>
                 )}
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium mb-2">Last Name</label>
                 <Input {...profileForm.register('lastName')} />
                 {profileForm.formState.errors.lastName && (
-                  <p className="mt-1 text-xs text-red-500">
+                  <p className="mt-1 text-xs text-(--destructive)">
                     {profileForm.formState.errors.lastName.message}
                   </p>
                 )}
@@ -233,13 +233,13 @@ export default function ProfilePage() {
             </div>
 
             {updateProfileMutation.isError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+              <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
                 Failed to update profile. Please try again.
               </div>
             )}
 
             {profileSuccess && (
-              <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-500">
+              <div className="rounded-lg bg-(--success)/10 border border-(--success)/20 px-4 py-3 text-sm text-(--success)">
                 {profileSuccess}
               </div>
             )}
@@ -268,7 +268,7 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium mb-2">Current Password</label>
               <Input type="password" {...passwordForm.register('currentPassword')} />
               {passwordForm.formState.errors.currentPassword && (
-                <p className="mt-1 text-xs text-red-500">
+                <p className="mt-1 text-xs text-(--destructive)">
                   {passwordForm.formState.errors.currentPassword.message}
                 </p>
               )}
@@ -278,7 +278,7 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium mb-2">New Password</label>
               <Input type="password" {...passwordForm.register('newPassword')} />
               {passwordForm.formState.errors.newPassword && (
-                <p className="mt-1 text-xs text-red-500">
+                <p className="mt-1 text-xs text-(--destructive)">
                   {passwordForm.formState.errors.newPassword.message}
                 </p>
               )}
@@ -288,20 +288,20 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium mb-2">Confirm New Password</label>
               <Input type="password" {...passwordForm.register('confirmPassword')} />
               {passwordForm.formState.errors.confirmPassword && (
-                <p className="mt-1 text-xs text-red-500">
+                <p className="mt-1 text-xs text-(--destructive)">
                   {passwordForm.formState.errors.confirmPassword.message}
                 </p>
               )}
             </div>
 
             {changePasswordMutation.isError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-500">
+              <div className="rounded-lg bg-(--destructive)/10 border border-(--destructive)/20 px-4 py-3 text-sm text-(--destructive)">
                 Failed to change password. Check your current password.
               </div>
             )}
 
             {passwordSuccess && (
-              <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 text-sm text-green-500">
+              <div className="rounded-lg bg-(--success)/10 border border-(--success)/20 px-4 py-3 text-sm text-(--success)">
                 {passwordSuccess}
               </div>
             )}

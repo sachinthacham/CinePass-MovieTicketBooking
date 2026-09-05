@@ -59,7 +59,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="font-(--font-display) text-2xl font-bold tracking-tight flex items-center gap-2">
             <Bell className="h-6 w-6" /> Notifications
             {unreadCount > 0 && (
               <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-(--primary) text-(--primary-foreground) text-xs font-bold">

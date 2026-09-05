@@ -12,20 +12,21 @@ import { bookingsApi } from '@/lib/api/bookings'
 import { ticketsApi } from '@/lib/api/tickets'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
+import { statusBadgeClass, type StatusTone } from '@/lib/utils/statusBadge'
 import type { Booking, TicketDto, BookingStatus } from '@/lib/types'
 
+const STATUS_TONE: Record<BookingStatus, StatusTone> = {
+  Confirmed: 'success',
+  Pending: 'warning',
+  Cancelled: 'destructive',
+  Refunded: 'info',
+  Expired: 'neutral',
+}
+
 function statusBadge(status: BookingStatus) {
-  const map: Record<BookingStatus, { label: string; className: string }> = {
-    Confirmed:  { label: 'Confirmed',  className: 'bg-green-500/10 text-green-600 border-green-500/20' },
-    Pending:    { label: 'Pending',    className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    Cancelled:  { label: 'Cancelled',  className: 'bg-red-500/10 text-red-600 border-red-500/20' },
-    Refunded:   { label: 'Refunded',   className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-    Expired:    { label: 'Expired',    className: 'bg-(--muted) text-(--muted-foreground)' },
-  }
-  const s = map[status] ?? { label: status, className: 'bg-(--muted)' }
   return (
-    <span className={cn('text-xs font-bold px-2 py-1 rounded border', s.className)}>
-      {s.label}
+    <span className={cn('text-xs font-bold px-2 py-1 rounded border', statusBadgeClass(STATUS_TONE[status] ?? 'neutral'))}>
+      {status}
     </span>
   )
 }
@@ -77,7 +78,7 @@ function TicketQrModal({ bookingId, onClose }: { bookingId: string; onClose: () 
                   />
                 ) : (
                   <div className="w-28 h-28 flex items-center justify-center">
-                    <QrCode className="w-16 h-16 text-gray-400" strokeWidth={1} />
+                    <QrCode className="w-16 h-16 text-(--muted-foreground)" strokeWidth={1} />
                   </div>
                 )}
               </div>
@@ -189,7 +190,7 @@ function BookingCard({ booking, isHighlighted }: { booking: Booking; isHighlight
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1 md:w-full text-red-500 border-red-500/30 hover:bg-red-500/10"
+                className="flex-1 md:w-full text-(--destructive) border-(--destructive)/30 hover:bg-(--destructive)/10"
                 onClick={() => setShowCancelModal(true)}
               >
                 <XCircle className="h-4 w-4 mr-2" /> Cancel
@@ -282,7 +283,7 @@ function TicketsPageContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Bookings</h1>
+          <h1 className="font-(--font-display) text-2xl font-bold tracking-tight">My Bookings</h1>
           <p className="text-(--muted-foreground) text-sm mt-1">View and manage your movie bookings.</p>
         </div>
         <Link href="/">
