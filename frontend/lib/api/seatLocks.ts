@@ -6,5 +6,5 @@ export const seatLocksApi = {
     api.post<ApiResponse<boolean>>('/seat-locks', data).then((r) => r.data),
 
   unlock: (data: SeatLockRequest) =>
-    api.delete<ApiResponse<boolean>>('/seat-locks', { data }).then((r) => r.data),
+    api.post<ApiResponse<boolean>>('/seat-locks/unlock', data).then((r) => r.data),
 }

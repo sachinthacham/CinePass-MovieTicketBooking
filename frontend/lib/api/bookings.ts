@@ -12,12 +12,12 @@ export const bookingsApi = {
     api.get<ApiResponse<PagedBookings>>('/bookings/my', { params }),
 
   cancel: (id: string, reason?: string) =>
-    api.delete<ApiResponse<boolean>>(`/bookings/${id}/cancel`, { data: { reason } }),
+    api.post<ApiResponse<boolean>>(`/bookings/${id}/cancel`, { reason }),
 
   // Admin
-  adminGetAll: (params?: { page?: number; pageSize?: number; status?: string; userId?: string; fromDate?: string; toDate?: string }) =>
+  adminGetAll: (params?: { page?: number; pageSize?: number; status?: string; userId?: string; fromDate?: string; toDate?: string; search?: string }) =>
     api.get<ApiResponse<PagedBookings>>('/bookings/admin', { params }),
 
   adminCancel: (id: string, reason?: string) =>
-    api.delete<ApiResponse<boolean>>(`/bookings/admin/${id}`, { data: { reason } }),
+    api.post<ApiResponse<boolean>>(`/bookings/admin/${id}/cancel`, { reason }),
 }
