@@ -10,14 +10,16 @@ interface LocationModalProps {
   isOpen: boolean
   onClose: () => void
   onSelect?: (location: string) => void
+  /** Cities to list — defaults to a static fallback list when not provided. */
+  cities?: string[]
 }
 
-const popularCities = ["Mumbai", "Delhi-NCR", "Bengaluru", "Hyderabad", "Chandigarh", "Chennai", "Pune", "Kolkata", "Kochi"]
+const defaultCities = ["Mumbai", "Delhi-NCR", "Bengaluru", "Hyderabad", "Chandigarh", "Chennai", "Pune", "Kolkata", "Kochi"]
 
-export function LocationModal({ isOpen, onClose, onSelect }: LocationModalProps) {
+export function LocationModal({ isOpen, onClose, onSelect, cities = defaultCities }: LocationModalProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
 
-  const filteredCities = popularCities.filter(city => 
+  const filteredCities = cities.filter(city =>
     city.toLowerCase().includes(searchQuery.toLowerCase())
   )
 

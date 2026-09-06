@@ -52,7 +52,7 @@ export function StarRating({
             <Star
               className={cn(
                 sizeMap[size],
-                filled ? 'text-yellow-500 fill-yellow-500' : 'text-(--muted-foreground)'
+                filled ? 'text-(--primary) fill-(--primary)' : 'text-(--muted-foreground)'
               )}
             />
           </button>
