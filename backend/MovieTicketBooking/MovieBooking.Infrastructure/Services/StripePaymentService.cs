@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MovieBooking.Application.Interfaces;
 using Stripe;
 
@@ -7,12 +8,14 @@ namespace MovieBooking.Infrastructure.Services;
 public class StripePaymentService : IPaymentService
 {
     private readonly string _webhookSecret;
+    private readonly ILogger<StripePaymentService> _logger;
 
-    public StripePaymentService(IConfiguration config)
+    public StripePaymentService(IConfiguration config, ILogger<StripePaymentService> logger)
     {
         var secretKey = config["Stripe:SecretKey"] ?? string.Empty;
         _webhookSecret = config["Stripe:WebhookSecret"] ?? string.Empty;
         StripeConfiguration.ApiKey = secretKey;
+        _logger = logger;
     }
 
     public async Task<(string PaymentIntentId, string ClientSecret)> CreatePaymentIntentAsync(
@@ -32,6 +35,10 @@ public class StripePaymentService : IPaymentService
         var service = new PaymentIntentService();
         var intent = await service.CreateAsync(options);
 
+        _logger.LogInformation(
+            "Created Stripe PaymentIntent {PaymentIntentId} for {Amount} {Currency}",
+            intent.Id, amount, currency);
+
         return (intent.Id, intent.ClientSecret);
     }
 
@@ -45,6 +52,10 @@ public class StripePaymentService : IPaymentService
 
         var service = new RefundService();
         var refund = await service.CreateAsync(options);
+
+        _logger.LogInformation(
+            "Issued Stripe refund {RefundId} for charge {ChargeId}", refund.Id, chargeId);
+
         return refund.Id;
     }
 

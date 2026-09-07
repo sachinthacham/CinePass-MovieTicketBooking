@@ -13,11 +13,15 @@ public class JwtService : IJwtService
 {
     
     private readonly string _key;
+    private readonly string _issuer;
+    private readonly string _audience;
 
     public JwtService(IConfiguration configuration)
     {
         _key = configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("JWT Key is not configured in appsettings.");
+        _issuer = configuration["Jwt:Issuer"] ?? "MovieBookingApi";
+        _audience = configuration["Jwt:Audience"] ?? "MovieBookingClient";
     }
 
     public string GenerateToken(Guid userId, string email, string role)
@@ -33,6 +37,8 @@ public class JwtService : IJwtService
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
+            issuer: _issuer,
+            audience: _audience,
             claims: claims,
             expires: DateTime.UtcNow.AddHours(2),
             signingCredentials: creds);

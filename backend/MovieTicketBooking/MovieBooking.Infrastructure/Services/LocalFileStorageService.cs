@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using MovieBooking.Application.Interfaces;
 
 namespace MovieBooking.Infrastructure.Services;
@@ -8,11 +9,16 @@ public class LocalFileStorageService : IFileStorageService
 {
     private readonly IHostEnvironment _env;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<LocalFileStorageService> _logger;
 
-    public LocalFileStorageService(IHostEnvironment env, IHttpContextAccessor httpContextAccessor)
+    public LocalFileStorageService(
+        IHostEnvironment env,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<LocalFileStorageService> logger)
     {
         _env = env;
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     public async Task<string> UploadAsync(IFormFile file, string folder)
@@ -58,9 +64,11 @@ public class LocalFileStorageService : IFileStorageService
             if (File.Exists(fullPath))
                 File.Delete(fullPath);
         }
-        catch
+        catch (Exception ex)
         {
-            // Swallow file deletion errors
+            // Best-effort cleanup — an orphaned file on disk isn't worth failing the
+            // caller's request over, but it must be visible in logs, not silent.
+            _logger.LogWarning(ex, "Failed to delete file for URL {FileUrl}", fileUrl);
         }
 
         return Task.CompletedTask;
