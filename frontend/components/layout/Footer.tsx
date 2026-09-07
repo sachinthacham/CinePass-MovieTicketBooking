@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="w-full py-12 px-4 md:px-8 border-t border-(--border) bg-(--background) mt-auto">
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-4">
-          <h3 className="text-lg font-bold tracking-tight">MovieTick</h3>
+          <h3 className="font-(--font-marquee) text-lg tracking-wide">MOVIETICK</h3>
           <p className="text-sm text-(--muted-foreground) max-w-xs">
             The premium destination for booking your favourite movies, events,
             and experiences.

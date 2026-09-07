@@ -3,10 +3,12 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { Search, MapPin, User, LogIn, LogOut, Menu, LayoutDashboard, Shield } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { LocationModal } from '@/components/ui/LocationModal'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -15,11 +17,28 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/Dropdown'
 import { useAuthStore } from '@/lib/stores/authStore'
+import { useLocationStore } from '@/lib/stores/locationStore'
+import { theatersApi } from '@/lib/api/theaters'
 
 export function Navbar() {
   const { isAuthenticated, isAdmin, user, logout } = useAuthStore()
+  const { selectedCity, setSelectedCity } = useLocationStore()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const [locationModalOpen, setLocationModalOpen] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState('')
+
+  const { data: citiesData } = useQuery({
+    queryKey: ['theater-cities'],
+    queryFn: theatersApi.getCities,
+  })
+  const cities: string[] = citiesData?.data ?? []
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (q) router.push(`/movies?search=${encodeURIComponent(q)}`)
+  }
 
   const handleLogout = () => {
     logout()
@@ -38,7 +57,9 @@ export function Navbar() {
         {/* Brand & Desktop Links */}
         <div className="flex flex-1 items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold tracking-tight">MovieTick</span>
+            <span className="font-(--font-marquee) text-xl tracking-wide text-(--foreground)">
+              MOVIETICK<span className="text-(--primary)">.</span>
+            </span>
           </Link>
           <div className="hidden md:flex items-center space-x-4 text-sm font-medium">
             <Link href="/" className="transition-colors hover:text-(--foreground)/80 text-(--foreground)">
@@ -57,22 +78,29 @@ export function Navbar() {
         </div>
 
         {/* Search Bar (Desktop) */}
-        <div className="hidden md:flex flex-1 items-center justify-center max-w-md px-6">
+        <form onSubmit={handleSearch} className="hidden md:flex flex-1 items-center justify-center max-w-md px-6">
           <div className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-(--muted-foreground)" />
             <Input
               type="search"
-              placeholder="Search for movies, events, plays..."
+              placeholder="Search for movies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-(--muted) border-none pl-9 focus-visible:bg-(--background) focus-visible:ring-1 transition-all"
             />
           </div>
-        </div>
+        </form>
 
         {/* Right Actions */}
         <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
-          <Button variant="ghost" size="sm" className="hidden sm:flex text-(--muted-foreground) px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden sm:flex text-(--muted-foreground) px-2"
+            onClick={() => setLocationModalOpen(true)}
+          >
             <MapPin className="mr-2 h-4 w-4" />
-            <span>Select Location</span>
+            <span>{selectedCity || 'Select Location'}</span>
           </Button>
 
           {isAuthenticated ? (
@@ -115,7 +143,7 @@ export function Navbar() {
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-red-500 focus:text-red-500"
+                  className="text-(--destructive) focus:text-(--destructive)"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -202,7 +230,7 @@ export function Navbar() {
               </Link>
               <button
                 type="button"
-                className="text-left py-2 text-red-500"
+                className="text-left py-2 text-(--destructive)"
                 onClick={() => {
                   setMobileMenuOpen(false)
                   handleLogout()
@@ -214,6 +242,13 @@ export function Navbar() {
           )}
         </div>
       )}
+
+      <LocationModal
+        isOpen={locationModalOpen}
+        onClose={() => setLocationModalOpen(false)}
+        onSelect={setSelectedCity}
+        cities={cities.length > 0 ? cities : undefined}
+      />
     </nav>
   )
 }
