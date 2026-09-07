@@ -121,7 +121,7 @@ ipch/
 # Visual Studio Trace Files
 *.e2e
 
-# Environment files (secrets)
+# Enironment files (secrets)
 .env
 .env.*
 !.env.example
