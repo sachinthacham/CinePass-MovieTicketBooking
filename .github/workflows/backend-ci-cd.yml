@@ -1,0 +1,93 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci-cd.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "backend/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # required for Azure OIDC login
+  contents: read
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  WORKDIR: backend/MovieTicketBooking
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+        working-directory: ${{ env.WORKDIR }}
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+        working-directory: ${{ env.WORKDIR }}
+
+      - name: Test
+        run: dotnet test --no-build -c Release --logger "trx;LogFileName=test-results.trx"
+        working-directory: ${{ env.WORKDIR }}
+
+      - name: Publish test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ env.WORKDIR }}/**/test-results.trx
+
+  # Publishes the compiled app and deploys it straight to Azure App Service —
+  # no container involved. The free F1 App Service tier doesn't reliably
+  # support custom containers, so this is the plain "build once, ship the
+  # binaries" path: dotnet publish -> zip -> Azure. Only runs on pushes to
+  # master; PRs stop after build-and-test above.
+  deploy:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish
+        run: dotnet publish MovieBooking.Api/MovieBooking.Api.csproj -c Release -o ./publish
+        working-directory: ${{ env.WORKDIR }}
+
+      # OIDC federation — no Azure credential is stored as a GitHub secret;
+      # GitHub issues a short-lived token that Azure trusts directly.
+      # See deploy/azure-provision.sh for the one-time setup this depends on.
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: ${{ env.WORKDIR }}/publish
+
+      - name: Azure logout
+        if: always()
+        run: az logout

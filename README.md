@@ -182,6 +182,10 @@ Current coverage focuses on auth, admin, and movie-rating handlers. Extending it
 
 ---
 
+## ☁️ Deployment
+
+Deployed on Azure App Service (F1, free tier) + Azure SQL Database (free offer) + Vercel (frontend) — $0/month by design, since this exists to be demoed, not to serve real traffic. GitHub Actions builds, tests, and deploys on every push to `main` via OIDC (no stored Azure credentials). See [`deploy/README.md`](deploy/README.md) for the full runbook, [`deploy/azure-provision.sh`](deploy/azure-provision.sh) for the infrastructure setup, and its "Explaining this pipeline in an interview" section for the talking points.
+
 ## 🗺️ Roadmap
 
 - [ ] Unit tests for `CreateBookingHandler`, `ConfirmBookingHandler`, and `LockSeatsHandler`
