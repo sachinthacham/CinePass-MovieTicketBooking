@@ -53,10 +53,6 @@ export default function RegisterPage() {
         return
       }
       await establishSession(res.data.accessToken, res.data.refreshToken)
-      document.cookie = `auth-token=${res.data.accessToken}; path=/; max-age=86400`
-      const { useAuthStore } = await import('@/lib/stores/authStore')
-      const role = useAuthStore.getState().user?.roles?.includes('Admin') ? 'Admin' : 'User'
-      document.cookie = `auth-role=${role}; path=/; max-age=86400`
       router.push('/')
     } catch (err: unknown) {
       setError('root', { message: getApiErrorMessage(err, 'Registration failed. Please try again.') })

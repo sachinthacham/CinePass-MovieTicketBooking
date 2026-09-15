@@ -31,7 +31,7 @@ function CheckoutStatusContent() {
         </div>
         <h1 className="font-(--font-display) text-3xl font-bold tracking-tight mb-2">Payment Failed</h1>
         <p className="text-(--muted-foreground) max-w-md mx-auto mb-8">
-          We couldn't process your payment. Please try again with a different payment method or contact your bank.
+          We couldn&apos;t process your payment. Please try again with a different payment method or contact your bank.
         </p>
         <div className="flex items-center space-x-4">
           <Link href="/checkout"><Button size="lg">Try Again</Button></Link>

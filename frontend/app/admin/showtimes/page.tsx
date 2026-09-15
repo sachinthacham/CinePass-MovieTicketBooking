@@ -35,7 +35,6 @@ const showtimeSchema = z.object({
     })
   ),
 })
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ShowtimeFormData = z.infer<typeof showtimeSchema> & { pricing: { seatCategoryId: string; price: number }[] }
 
 export default function AdminShowtimesPage() {
@@ -47,12 +46,6 @@ export default function AdminShowtimesPage() {
   const { data: languagesData } = useQuery({
     queryKey: ['languages'],
     queryFn: languagesApi.getAll,
-  })
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-showtimes', selectedTheaterId, selectedDate],
-    queryFn: () => showtimesApi.getByTheater(selectedTheaterId, selectedDate),
-    enabled: Boolean(selectedTheaterId),
   })
 
   const { data: moviesData } = useQuery({
@@ -70,33 +63,38 @@ export default function AdminShowtimesPage() {
     queryFn: () => showFormatsApi.getAll(),
   })
 
+  const theaters = theatersData?.data?.items ?? []
+
+  // Defaults to the first theater once the list loads, without needing an
+  // effect+setState round trip — the user's own selection still wins once made.
+  const effectiveTheaterId = selectedTheaterId || theaters[0]?.id || ''
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-showtimes', effectiveTheaterId, selectedDate],
+    queryFn: () => showtimesApi.getByTheater(effectiveTheaterId, selectedDate),
+    enabled: Boolean(effectiveTheaterId),
+  })
+
   const { data: screensData } = useQuery({
-    queryKey: ['screens', selectedTheaterId],
-    queryFn: () => screensApi.getByTheater(selectedTheaterId),
-    enabled: Boolean(selectedTheaterId),
+    queryKey: ['screens', effectiveTheaterId],
+    queryFn: () => screensApi.getByTheater(effectiveTheaterId),
+    enabled: Boolean(effectiveTheaterId),
   })
 
   const { data: categoriesData } = useQuery({
-    queryKey: ['seat-categories', selectedTheaterId],
-    queryFn: () => seatCategoriesApi.getByTheater(selectedTheaterId),
-    enabled: Boolean(selectedTheaterId),
+    queryKey: ['seat-categories', effectiveTheaterId],
+    queryFn: () => seatCategoriesApi.getByTheater(effectiveTheaterId),
+    enabled: Boolean(effectiveTheaterId),
   })
 
   const showtimes = data?.data ?? []
   const movies = moviesData?.data?.items ?? []
-  const theaters = theatersData?.data?.items ?? []
   const languages = languagesData?.data ?? []
-
-  React.useEffect(() => {
-    if (!selectedTheaterId && theaters.length > 0) {
-      setSelectedTheaterId(theaters[0].id)
-    }
-  }, [theaters, selectedTheaterId])
   const screens = screensData?.data ?? []
   const categories = categoriesData?.data ?? []
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, control, watch } = useForm<ShowtimeFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver's inferred type doesn't line up with useForm's generic here
     resolver: zodResolver(showtimeSchema) as any,
     defaultValues: { pricing: [], languageId: '' },
   })
@@ -206,11 +204,11 @@ export default function AdminShowtimesPage() {
         </div>
       </div>
 
-      {selectedTheaterId && (
+      {effectiveTheaterId && (
         <p className="text-sm text-(--muted-foreground)">
           Showing showtimes for{' '}
           <span className="font-medium text-(--foreground)">
-            {theaters.find((t) => t.id === selectedTheaterId)?.name ?? 'this theater'}
+            {theaters.find((t) => t.id === effectiveTheaterId)?.name ?? 'this theater'}
           </span>{' '}
           on {new Date(selectedDate + 'T12:00:00').toLocaleDateString()}.
         </p>
@@ -255,7 +253,7 @@ export default function AdminShowtimesPage() {
             <label className="block text-sm font-medium mb-1">Theater</label>
             <select
               className="w-full h-10 rounded-md border border-(--input) bg-(--background) px-3 text-sm outline-none focus:ring-1"
-              value={selectedTheaterId}
+              value={effectiveTheaterId}
               onChange={(e) => setSelectedTheaterId(e.target.value)}
             >
               <option value="">Select theater...</option>
@@ -268,7 +266,7 @@ export default function AdminShowtimesPage() {
             <select
               className="w-full h-10 rounded-md border border-(--input) bg-(--background) px-3 text-sm outline-none focus:ring-1"
               {...register('screenId')}
-              disabled={!selectedTheaterId}
+              disabled={!effectiveTheaterId}
             >
               <option value="">Select screen...</option>
               {screens.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}

@@ -163,7 +163,7 @@ export interface CreateMovieDto {
   isComingSoon?: boolean
 }
 
-export interface UpdateMovieDto extends Partial<CreateMovieDto> {}
+export type UpdateMovieDto = Partial<CreateMovieDto>
 
 export interface MoviesFilter {
   search?: string
@@ -229,7 +229,7 @@ export interface CreateTheaterDto {
   email?: string
 }
 
-export interface UpdateTheaterDto extends Partial<CreateTheaterDto> {}
+export type UpdateTheaterDto = Partial<CreateTheaterDto>
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
 
@@ -251,7 +251,7 @@ export interface CreateScreenDto {
   totalColumns: number
 }
 
-export interface UpdateScreenDto extends Partial<Omit<CreateScreenDto, 'theaterId'>> {}
+export type UpdateScreenDto = Partial<Omit<CreateScreenDto, 'theaterId'>>
 
 // ─── Seats ────────────────────────────────────────────────────────────────────
 
@@ -356,7 +356,7 @@ export interface CreateShowtimeDto {
   pricing?: { seatCategoryId: string; price: number }[]
 }
 
-export interface UpdateShowtimeDto extends Partial<Omit<CreateShowtimeDto, 'movieId' | 'screenId'>> {}
+export type UpdateShowtimeDto = Partial<Omit<CreateShowtimeDto, 'movieId' | 'screenId'>>
 
 // ─── Seat Locks ───────────────────────────────────────────────────────────────
 

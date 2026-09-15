@@ -223,15 +223,16 @@ export default function AdminBookingsPage() {
   );
 
   // Debounce the search box so it filters server-side (across all pages, not
-  // just the current one) without firing a request on every keystroke.
+  // just the current one) without firing a request on every keystroke. Also
+  // resets back to page 1 here, since a new search term invalidates whatever
+  // page the user was on (the statusFilter click handler resets it directly).
   React.useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
     return () => clearTimeout(t);
   }, [search]);
-
-  React.useEffect(() => {
-    setPage(1);
-  }, [statusFilter, debouncedSearch]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-bookings", statusFilter, page, debouncedSearch],

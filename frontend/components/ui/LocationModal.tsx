@@ -67,7 +67,7 @@ export function LocationModal({ isOpen, onClose, onSelect, cities = defaultCitie
           
           {filteredCities.length === 0 && (
             <div className="text-center py-12 text-(--muted-foreground)">
-              No cities found matching "{searchQuery}"
+              No cities found matching &quot;{searchQuery}&quot;
             </div>
           )}
         </div>

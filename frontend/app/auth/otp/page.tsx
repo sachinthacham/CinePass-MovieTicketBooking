@@ -9,7 +9,7 @@ export default function OTPPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-(--foreground)">Verify your email</h2>
           <p className="mt-4 text-sm text-(--muted-foreground)">
-            We've sent a 6-digit verification code to your email. Please enter it below to confirm your account.
+            We&apos;ve sent a 6-digit verification code to your email. Please enter it below to confirm your account.
           </p>
         </div>
 
@@ -37,7 +37,7 @@ export default function OTPPage() {
 
         <div className="mt-6 text-sm">
           <p className="text-(--muted-foreground)">
-            Didn't receive the code?{" "}
+            Didn&apos;t receive the code?{" "}
             <button className="font-semibold text-(--primary) hover:underline focus:outline-none">
               Resend code
             </button>

@@ -210,7 +210,7 @@ function BookingCard({ booking, isHighlighted }: { booking: Booking; isHighlight
               <div className="text-sm">
                 <p className="font-semibold text-amber-700">Are you sure you want to cancel?</p>
                 <p className="text-(--muted-foreground) mt-1">
-                  Cancelling "{booking.movieTitle}" ({booking.bookingReference}).
+                  Cancelling &quot;{booking.movieTitle}&quot; ({booking.bookingReference}).
                   {booking.payment?.status === 'Succeeded' && ' A refund will be processed within 5-7 business days.'}
                 </p>
               </div>
@@ -317,7 +317,7 @@ function TicketsPageContent() {
         <div className="text-center py-16 border border-(--border) border-dashed rounded-2xl">
           <Ticket className="w-12 h-12 text-(--muted-foreground) mx-auto mb-4 opacity-50" />
           <h3 className="font-medium text-lg">No bookings found</h3>
-          <p className="text-(--muted-foreground) text-sm mb-6">You haven't made any bookings yet.</p>
+          <p className="text-(--muted-foreground) text-sm mb-6">You haven&apos;t made any bookings yet.</p>
           <Link href="/"><Button>Book a ticket now</Button></Link>
         </div>
       ) : (

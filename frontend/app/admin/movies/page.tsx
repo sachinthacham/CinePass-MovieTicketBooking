@@ -35,7 +35,6 @@ const movieSchema = z.object({
 })
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MovieFormData = z.infer<typeof movieSchema> & { durationMinutes: number }
 
 export default function AdminMoviesPage() {
@@ -65,8 +64,8 @@ export default function AdminMoviesPage() {
   const genres = genresData?.data ?? []
   const languages = languagesData?.data ?? []
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<MovieFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver's inferred type doesn't line up with useForm's generic here
     resolver: zodResolver(movieSchema) as any,
   })
 

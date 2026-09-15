@@ -93,7 +93,7 @@ export default function NotificationsPage() {
         <div className="text-center py-16 border border-(--border) border-dashed rounded-2xl">
           <BellOff className="w-12 h-12 text-(--muted-foreground) mx-auto mb-4 opacity-50" />
           <h3 className="font-medium text-lg">No notifications</h3>
-          <p className="text-(--muted-foreground) text-sm">You're all caught up!</p>
+          <p className="text-(--muted-foreground) text-sm">You&apos;re all caught up!</p>
         </div>
       ) : (
         <div className="space-y-2">

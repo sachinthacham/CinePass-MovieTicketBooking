@@ -138,6 +138,15 @@ az ad app federated-credential create \
     \"audiences\": [\"api://AzureADTokenExchange\"]
   }"
 
+# Gotcha: if this repo has ever been renamed (on GitHub, not just this script's
+# GITHUB_REPO value), GitHub stops sending the plain "repo:owner/repo:ref:..."
+# subject above and instead sends "repo:owner@ownerId/repo@repoId:ref:...",
+# with the immutable numeric IDs from `gh api users/<owner>` and
+# `gh api repos/<owner>/<repo>` inlined. The Azure login step then fails with
+# AADSTS700213 "No matching federated identity record found" and the actual
+# subject GitHub sent is printed in that error — recreate this credential with
+# that exact string if so.
+
 TENANT_ID=$(az account show --query tenantId -o tsv)
 
 echo ""

@@ -154,23 +154,27 @@ function CheckoutContent() {
   const { user } = useAuthStore()
   const { toast } = useToast()
 
-  const [context, setContext] = React.useState<BookingContext | null>(null)
+  // Read once, during the initial render, instead of via an effect + setState:
+  // sessionStorage is synchronous and only needs to be read on mount.
+  const [context] = React.useState<BookingContext | null>(() => {
+    if (typeof window === 'undefined') return null
+    const stored = sessionStorage.getItem('booking-context')
+    if (!stored) return null
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return null
+    }
+  })
   const [step, setStep] = React.useState<'review' | 'payment'>('review')
   const [bookingResult, setBookingResult] = React.useState<CreateBookingResult | null>(null)
   const [isCreatingBooking, setIsCreatingBooking] = React.useState(false)
 
   React.useEffect(() => {
-    const stored = sessionStorage.getItem('booking-context')
-    if (!stored) {
-      router.push('/')
-      return
-    }
-    try {
-      setContext(JSON.parse(stored))
-    } catch {
+    if (!context) {
       router.push('/')
     }
-  }, [router])
+  }, [context, router])
 
   const handleProceedToPay = async () => {
     if (!context) return

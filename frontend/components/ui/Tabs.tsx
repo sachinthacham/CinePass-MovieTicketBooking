@@ -25,21 +25,19 @@ export function Tabs({
   className?: string;
   children: React.ReactNode;
 }) {
-  const [tabValue, setTabValue] = React.useState(value || defaultValue || "")
-  
-  React.useEffect(() => {
-    if (value !== undefined) {
-      setTabValue(value)
-    }
-  }, [value])
-  
+  const [tabValue, setTabValue] = React.useState(defaultValue || "")
+
+  // Controlled/uncontrolled: when `value` is provided it always wins, so there's
+  // no need to mirror it into state via an effect — just read it directly.
+  const currentValue = value !== undefined ? value : tabValue
+
   const handleValueChange = React.useCallback((newValue: string) => {
     setTabValue(newValue)
     onValueChange?.(newValue)
   }, [onValueChange])
 
   return (
-    <TabsContext.Provider value={{ value: tabValue, onValueChange: handleValueChange }}>
+    <TabsContext.Provider value={{ value: currentValue, onValueChange: handleValueChange }}>
       <div className={cn("w-full", className)}>{children}</div>
     </TabsContext.Provider>
   )
