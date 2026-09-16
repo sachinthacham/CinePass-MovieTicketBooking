@@ -53,11 +53,12 @@ jobs:
   # Publishes the compiled app and deploys it straight to Azure App Service —
   # no container involved. The free F1 App Service tier doesn't reliably
   # support custom containers, so this is the plain "build once, ship the
-  # binaries" path: dotnet publish -> zip -> Azure. Only runs on pushes to
-  # master; PRs stop after build-and-test above.
+  # binaries" path: dotnet publish -> zip -> Azure. Runs on pushes to master,
+  # or a manual "Run workflow" click (workflow_dispatch) — either way only
+  # once on that branch; PRs stop after build-and-test above.
   deploy:
     needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
