@@ -4,10 +4,10 @@ Architecture: **Vercel** (frontend) + **Azure App Service, Linux, F1 (free)** (b
 
 This whole stack costs **$0/month** — both the F1 App Service plan and the SQL Database free offer are "always free," not time-limited trials. Your $100 student credit stays untouched, as a buffer for whatever else you want to try in Azure later. That's a deliberate trade for a project that exists to be looked at by interviewers, not used by real traffic:
 
-- F1 apps **unload after ~20 minutes of no requests** — the next request is a 10-30s cold start. Open the link yourself a minute before a live demo to wake it up.
-- **60 CPU-minutes/day** budget — irrelevant at demo-only traffic levels.
+- F1 apps **unload after ~20 minutes of no requests** — the next request is a 10-30s cold start. `.github/workflows/keep-warm.yml` pings the live API every 10 minutes specifically to prevent this, so a recruiter clicking the link cold still gets an instant response — at zero added cost (a ping is a fraction of a second of CPU, nowhere near the daily budget below).
+- **60 CPU-minutes/day** budget — irrelevant at demo-only traffic levels, and the keep-warm pings use only a few seconds of it total per day.
 - **WebSocket connections capped at 5 concurrent** — fine for you + one interviewer, not for real users.
-- Azure SQL's serverless free tier **auto-pauses** after inactivity too — same cold-start idea, on the database side.
+- Azure SQL's serverless free tier **auto-pauses** after inactivity too — same cold-start idea, on the database side. The keep-warm ping hits `/api/v1/movies` (a real DB query), so it keeps the database warm as well, not just the App Service.
 
 None of that is a flaw to hide — it's a legitimate answer to "why F1 and not something bigger": *this project needs a stable link for a job search, not production traffic, so I optimized for it costing nothing indefinitely rather than for performance I don't need.*
 
