@@ -165,7 +165,7 @@ Seeded automatically on first run:
 | Role | Email | Password |
 | :--- | :--- | :--- |
 | Admin | `admin@movietick.com` | `Admin@123456` |
-| Customer | `jeewa@gmail.com` | `12345678` |
+| Customer | `john.doe@movietick.com` | `User@123456` |
 
 ---
 
@@ -178,18 +178,47 @@ cd backend/MovieTicketBooking
 dotnet test
 ```
 
-Current coverage focuses on auth, admin, and movie-rating handlers. Extending it to the booking/payment handlers and wiring up CI are the next items on the roadmap below.
+Tests run automatically in CI on every push and pull request (see [Deployment](#️-deployment) below). Current coverage focuses on auth, admin, and movie-rating handlers; extending it to the booking/payment handlers is on the roadmap.
 
 ---
 
 ## ☁️ Deployment
 
-Deployed on Azure App Service (F1, free tier) + Azure SQL Database (free offer) + Vercel (frontend) — $0/month by design, since this exists to be demoed, not to serve real traffic. GitHub Actions builds, tests, and deploys on every push to `main` via OIDC (no stored Azure credentials). See [`deploy/README.md`](deploy/README.md) for the full runbook, [`deploy/azure-provision.sh`](deploy/azure-provision.sh) for the infrastructure setup, and its "Explaining this pipeline in an interview" section for the talking points.
+CinePass is deployed live on **Microsoft Azure** (backend + database) and **Vercel** (frontend), with a fully automated **CI/CD pipeline** on GitHub Actions. The whole stack runs on free tiers — **$0/month** by design, since it exists to be demoed rather than to serve production traffic.
+
+### Architecture
+
+| Component | Hosted on | Link |
+| :--- | :--- | :--- |
+| **Frontend** (Next.js 16) | Vercel — auto-deploys on every push to `master` | [cine-pass-movie-ticket-booking.vercel.app](https://cine-pass-movie-ticket-booking.vercel.app) |
+| **Backend API + SignalR hub** (ASP.NET Core 8) | Azure App Service (Linux, F1 free tier) | [cinepass-api-sachintha26.azurewebsites.net](https://cinepass-api-sachintha26.azurewebsites.net/api/v1/movies) |
+| **Database** (SQL Server) | Azure SQL Database (free offer, serverless) | — |
+| **CI/CD** | GitHub Actions | [Actions tab](https://github.com/sachinthacham/CinePass-MovieTicketBooking/actions) |
+
+### CI/CD pipeline
+
+| Workflow | Trigger | What it does |
+| :--- | :--- | :--- |
+| [`backend-ci-cd.yml`](.github/workflows/backend-ci-cd.yml) | Push to `master` touching `backend/**`, or manual run | Restore → build → run xUnit tests → `dotnet publish` → sign in to Azure via OIDC → deploy to App Service |
+| [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | Push / PR touching `frontend/**` | `npm ci` → lint → type-check → production build (Vercel handles the actual deploy) |
+| [`keep-warm.yml`](.github/workflows/keep-warm.yml) | Every 10 minutes | Pings the live API so the free-tier app and database never go cold — recruiters get an instant response, not a 30s cold start |
+
+**Passwordless deploys with OIDC** — the backend workflow authenticates to Azure using OpenID Connect federation instead of a stored secret: GitHub proves its identity to Azure AD at runtime and receives a short-lived token, so there is no long-lived Azure credential in the repo or in GitHub Secrets to leak or rotate.
+
+### Infrastructure as code
+
+The Azure resources (resource group, App Service plan, Web App, SQL server + database, app settings, and the OIDC federated credential) are provisioned by a single script: [`deploy/azure-provision.sh`](deploy/azure-provision.sh). The step-by-step runbook — including troubleshooting notes for real issues hit along the way (region-restricted student subscriptions, OIDC subject claims for renamed repos, SQL credential drift) — is in [`deploy/README.md`](deploy/README.md).
+
+### Free-tier trade-offs
+
+- The App Service free tier unloads idle apps after ~20 minutes; the keep-warm workflow above prevents that.
+- 60 CPU-minutes/day and 5 concurrent WebSocket connections — plenty for a demo, not for real traffic.
+- Stripe runs in **test mode** (use [Stripe's test cards](https://docs.stripe.com/testing)); no real payments are processed.
 
 ## 🗺️ Roadmap
 
+- [x] CI/CD pipeline (GitHub Actions) — build, test, and deploy on every push
 - [ ] Unit tests for `CreateBookingHandler`, `ConfirmBookingHandler`, and `LockSeatsHandler`
-- [ ] CI pipeline (GitHub Actions) running build + tests on every PR
 - [ ] Pagination on list endpoints
 - [ ] Integration tests against a containerized SQL Server
 
@@ -198,3 +227,15 @@ Deployed on Azure App Service (F1, free tier) + Azure SQL Database (free offer) 
 ## 🛡️ License
 
 Licensed under the [MIT License](LICENSE).
+
+---
+
+## 🌐 Live Demo
+
+**Try it now: [cine-pass-movie-ticket-booking.vercel.app](https://cine-pass-movie-ticket-booking.vercel.app)**
+
+- **Frontend:** https://cine-pass-movie-ticket-booking.vercel.app
+- **Backend API:** https://cinepass-api-sachintha26.azurewebsites.net/api/v1/movies
+- **Source code:** https://github.com/sachinthacham/CinePass-MovieTicketBooking
+
+Sign in with the seeded demo accounts from [Test Credentials](#-test-credentials) — `admin@movietick.com` / `Admin@123456` for the admin dashboard, or `john.doe@movietick.com` / `User@123456` to browse and book as a customer.
