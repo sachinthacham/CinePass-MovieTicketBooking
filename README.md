@@ -61,8 +61,8 @@ This isn't a CRUD demo — it's built around the concurrency and payment-correct
 
 The parts of this codebase most worth pointing to in an interview:
 
-- **Idempotent payment confirmation** — Stripe delivers webhooks *at least once*, so `ConfirmBookingHandler` checks the booking's status first; a redelivered `payment_intent.succeeded` event is treated as a no-op instead of double-issuing tickets.
-- **Transaction boundaries drawn around correctness, not convenience** — the Stripe `PaymentIntent` is created *before* the DB transaction opens (an external call should never hold a DB lock), while side effects that talk to the outside world (SignalR broadcast, confirmation email) fire only *after* the transaction commits, and never roll back a confirmed booking if they fail.
+- **Idempotent payment confirmation** — Stripe delivers webhooks _at least once_, so `ConfirmBookingHandler` checks the booking's status first; a redelivered `payment_intent.succeeded` event is treated as a no-op instead of double-issuing tickets.
+- **Transaction boundaries drawn around correctness, not convenience** — the Stripe `PaymentIntent` is created _before_ the DB transaction opens (an external call should never hold a DB lock), while side effects that talk to the outside world (SignalR broadcast, confirmation email) fire only _after_ the transaction commits, and never roll back a confirmed booking if they fail.
 - **Real-time seat availability without polling** — a SignalR hub groups clients by showtime (`showtime-{id}`); when one customer locks or books a seat, every other browser watching that showtime updates instantly.
 - **Self-healing seat locks** — a hosted background service (`SeatLockCleanupService`) periodically reclaims seats whose lock expired or whose booking was abandoned mid-checkout, so inventory never gets stuck.
 - **Rate limiting scoped to the actual threat** — auth endpoints (brute force / credential stuffing) and seat-lock endpoints (griefing) each carry their own limiter, rather than one blanket policy.
@@ -73,17 +73,17 @@ The parts of this codebase most worth pointing to in an interview:
 
 ## 🛠️ Technology Stack
 
-| Layer | Technologies | Key Libraries |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4 | Zustand, Axios, TanStack Query, React Hook Form, Zod, Radix UI |
-| **Backend API** | ASP.NET Core 8 Web API (C#) | MediatR (CQRS), FluentValidation, AutoMapper, Serilog, Swashbuckle |
-| **Persistence** | Microsoft SQL Server | EF Core (code-first migrations) |
-| **Real-time** | ASP.NET Core SignalR | WebSocket seat-availability broadcasts |
-| **Auth** | JWT + refresh tokens | Google / Facebook / Apple OAuth |
-| **Payments** | Stripe (Elements + PaymentIntents + webhooks) | Stripe.net |
-| **Other services** | QR codes, email, background jobs | QRCoder, MailKit (SMTP), ASP.NET hosted services |
-| **Infra** | Containerization | Docker, Docker Compose |
-| **Testing** | Backend unit tests | xUnit, Moq |
+| Layer              | Technologies                                       | Key Libraries                                                      |
+| :----------------- | :------------------------------------------------- | :----------------------------------------------------------------- |
+| **Frontend**       | Next.js 16 (App Router), React 19, Tailwind CSS v4 | Zustand, Axios, TanStack Query, React Hook Form, Zod, Radix UI     |
+| **Backend API**    | ASP.NET Core 8 Web API (C#)                        | MediatR (CQRS), FluentValidation, AutoMapper, Serilog, Swashbuckle |
+| **Persistence**    | Microsoft SQL Server                               | EF Core (code-first migrations)                                    |
+| **Real-time**      | ASP.NET Core SignalR                               | WebSocket seat-availability broadcasts                             |
+| **Auth**           | JWT + refresh tokens                               | Google / Facebook / Apple OAuth                                    |
+| **Payments**       | Stripe (Elements + PaymentIntents + webhooks)      | Stripe.net                                                         |
+| **Other services** | QR codes, email, background jobs                   | QRCoder, MailKit (SMTP), ASP.NET hosted services                   |
+| **Infra**          | Containerization                                   | Docker, Docker Compose                                             |
+| **Testing**        | Backend unit tests                                 | xUnit, Moq                                                         |
 
 ---
 
@@ -119,7 +119,7 @@ Want to try it without installing anything? Use the [live demo](#-live-demo). To
 - [**Node.js 20+**](https://nodejs.org/) (comes with npm)
 - [**Docker Desktop**](https://www.docker.com/products/docker-desktop/) — runs the SQL Server database (and the full stack, if you prefer)
 - [**Git**](https://git-scm.com/)
-- *Optional:* free [Stripe test-mode keys](https://dashboard.stripe.com/test/apikeys) — only needed to complete a card payment at checkout
+- _Optional:_ free [Stripe test-mode keys](https://dashboard.stripe.com/test/apikeys) — only needed to complete a card payment at checkout
 
 ```bash
 git clone https://github.com/sachinthacham/CinePass-MovieTicketBooking.git
@@ -170,15 +170,15 @@ For checkout, put your Stripe test publishable key in `.env.local` as `NEXT_PUBL
 
 ### Local links
 
-| What | URL |
-| :--- | :--- |
-| 🎬 **The app (frontend)** | http://localhost:3000 |
-| 🔐 Sign in page | http://localhost:3000/auth/login |
-| 🛠️ Admin dashboard (sign in as admin first) | http://localhost:3000/admin |
-| ⚙️ Backend API | http://127.0.0.1:5050/api/v1 |
-| 📖 Swagger UI (interactive API docs) | http://127.0.0.1:5050 |
-| ✅ Quick API check (returns movie JSON) | http://127.0.0.1:5050/api/v1/movies |
-| 🗄️ SQL Server | `localhost,1433` — user `sa`, password `YourStrong@Pass123` (local dev only) |
+| What                                        | URL                                                                          |
+| :------------------------------------------ | :--------------------------------------------------------------------------- |
+| 🎬 **The app (frontend)**                   | http://localhost:3000                                                        |
+| 🔐 Sign in page                             | http://localhost:3000/auth/login                                             |
+| 🛠️ Admin dashboard (sign in as admin first) | http://localhost:3000/admin                                                  |
+| ⚙️ Backend API                              | http://127.0.0.1:5050/api/v1                                                 |
+| 📖 Swagger UI (interactive API docs)        | http://127.0.0.1:5050                                                        |
+| ✅ Quick API check (returns movie JSON)     | http://127.0.0.1:5050/api/v1/movies                                          |
+| 🗄️ SQL Server                               | `localhost,1433` — user `sa`, password `YourStrong@Pass123` (local dev only) |
 
 Sign in with the accounts under [Test Credentials](#-test-credentials).
 
@@ -205,23 +205,23 @@ cp backend/MovieTicketBooking/MovieBooking.Api/.env.example backend/MovieTicketB
 docker compose up --build -d
 ```
 
-| Service | URL |
-| :--- | :--- |
-| 🎬 App (frontend) | http://localhost:3000 |
-| ⚙️ Backend API | http://localhost:5000/api/v1 |
-| 📖 Swagger UI | http://localhost:5000 |
+| Service           | URL                          |
+| :---------------- | :--------------------------- |
+| 🎬 App (frontend) | http://localhost:3000        |
+| ⚙️ Backend API    | http://localhost:5000/api/v1 |
+| 📖 Swagger UI     | http://localhost:5000        |
 
 Stop it with `docker compose down`. The first build takes a few minutes.
 
 ### Troubleshooting
 
-| Problem | Fix |
-| :--- | :--- |
-| API crashes with *"JWT Key is not configured"* | Set `Jwt__Key` in `backend/MovieTicketBooking/MovieBooking.Api/.env`. |
-| API fails with a SQL *login failed* / *cannot connect* error | The database isn't ready yet — wait ~30s and check `docker compose ps` shows `healthy`, then re-run `dotnet run`. |
-| Frontend loads but movies are empty or requests fail | Make sure the API is running on **port 5050** (`http://127.0.0.1:5050/api/v1/movies` should return JSON) and that `NEXT_PUBLIC_API_URL` in `.env.local` matches. Restart `npm run dev` after editing `.env.local`. |
-| *Port already in use* | Something else is on 3000, 5050, 5000 or 1433 — stop it, or check what's holding the port with `netstat -ano`. The frontend must stay on port 3000 or 3001, the only origins the local API allows (CORS). |
-| Want a clean database | `docker compose down -v`, then start again — demo data is re-seeded automatically. |
+| Problem                                                      | Fix                                                                                                                                                                                                                |
+| :----------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API crashes with _"JWT Key is not configured"_               | Set `Jwt__Key` in `backend/MovieTicketBooking/MovieBooking.Api/.env`.                                                                                                                                              |
+| API fails with a SQL _login failed_ / _cannot connect_ error | The database isn't ready yet — wait ~30s and check `docker compose ps` shows `healthy`, then re-run `dotnet run`.                                                                                                  |
+| Frontend loads but movies are empty or requests fail         | Make sure the API is running on **port 5050** (`http://127.0.0.1:5050/api/v1/movies` should return JSON) and that `NEXT_PUBLIC_API_URL` in `.env.local` matches. Restart `npm run dev` after editing `.env.local`. |
+| _Port already in use_                                        | Something else is on 3000, 5050, 5000 or 1433 — stop it, or check what's holding the port with `netstat -ano`. The frontend must stay on port 3000 or 3001, the only origins the local API allows (CORS).          |
+| Want a clean database                                        | `docker compose down -v`, then start again — demo data is re-seeded automatically.                                                                                                                                 |
 
 ---
 
@@ -229,10 +229,10 @@ Stop it with `docker compose down`. The first build takes a few minutes.
 
 Seeded automatically on first run:
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| Admin | `admin@movietick.com` | `Admin@123456` |
-| Customer | `john.doe@movietick.com` | `User@123456` |
+| Role     | Email                    | Password       |
+| :------- | :----------------------- | :------------- |
+| Admin    | `admin@movietick.com`    | `Admin@123456` |
+| Customer | `john.doe@movietick.com` | `User@123456`  |
 
 ---
 
@@ -255,19 +255,19 @@ CinePass is deployed live on **Microsoft Azure** (backend + database) and **Verc
 
 ### Architecture
 
-| Component | Hosted on | Link |
-| :--- | :--- | :--- |
-| **Frontend** (Next.js 16) | Vercel — auto-deploys on every push to `master` | [cine-pass-movie-ticket-booking.vercel.app](https://cine-pass-movie-ticket-booking.vercel.app) |
-| **Backend API + SignalR hub** (ASP.NET Core 8) | Azure App Service (Linux, F1 free tier) | [cinepass-api-sachintha26.azurewebsites.net](https://cinepass-api-sachintha26.azurewebsites.net/api/v1/movies) |
-| **Database** (SQL Server) | Azure SQL Database (free offer, serverless) | — |
-| **CI/CD** | GitHub Actions | [Actions tab](https://github.com/sachinthacham/CinePass-MovieTicketBooking/actions) |
+| Component                                      | Hosted on                                       | Link                                                                                                           |
+| :--------------------------------------------- | :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| **Frontend** (Next.js 16)                      | Vercel — auto-deploys on every push to `master` | [cine-pass-movie-ticket-booking.vercel.app](https://cine-pass-movie-ticket-booking.vercel.app)                 |
+| **Backend API + SignalR hub** (ASP.NET Core 8) | Azure App Service (Linux, F1 free tier)         | [cinepass-api-sachintha26.azurewebsites.net](https://cinepass-api-sachintha26.azurewebsites.net/api/v1/movies) |
+| **Database** (SQL Server)                      | Azure SQL Database (free offer, serverless)     | —                                                                                                              |
+| **CI/CD**                                      | GitHub Actions                                  | [Actions tab](https://github.com/sachinthacham/CinePass-MovieTicketBooking/actions)                            |
 
 ### CI/CD pipeline
 
-| Workflow | Trigger | What it does |
-| :--- | :--- | :--- |
+| Workflow                                                   | Trigger                                               | What it does                                                                                             |
+| :--------------------------------------------------------- | :---------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
 | [`backend-ci-cd.yml`](.github/workflows/backend-ci-cd.yml) | Push to `master` touching `backend/**`, or manual run | Restore → build → run xUnit tests → `dotnet publish` → sign in to Azure via OIDC → deploy to App Service |
-| [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | Push / PR touching `frontend/**` | `npm ci` → lint → type-check → production build (Vercel handles the actual deploy) |
+| [`frontend-ci.yml`](.github/workflows/frontend-ci.yml)     | Push / PR touching `frontend/**`                      | `npm ci` → lint → type-check → production build (Vercel handles the actual deploy)                       |
 
 **Passwordless deploys with OIDC** — the backend workflow authenticates to Azure using OpenID Connect federation instead of a stored secret: GitHub proves its identity to Azure AD at runtime and receives a short-lived token, so there is no long-lived Azure credential in the repo or in GitHub Secrets to leak or rotate.
 
@@ -305,3 +305,28 @@ Licensed under the [MIT License](LICENSE).
 - **Source code:** https://github.com/sachinthacham/CinePass-MovieTicketBooking
 
 Sign in with the seeded demo accounts from [Test Credentials](#-test-credentials) — `admin@movietick.com` / `Admin@123456` for the admin dashboard, or `john.doe@movietick.com` / `User@123456` to browse and book as a customer.
+
+------Steps to open the project once it's back--------------
+
+Check the backend. Open https://cinepass-api-sachintha26.azurewebsites.net/api/v1/movies.
+
+JSON with movie titles: it's ready.
+
+503 or a blank page: it's still waking. Wait a minute and refresh.
+The first start after the database change also creates the tables and demo data, so allow 1-2 minutes.
+
+403 "web app is stopped": the quota hasn't reset yet.
+
+Open the app: https://cine-pass-movie-ticket-booking.vercel.app
+
+Sign in: https://cine-pass-movie-ticket-booking.vercel.app/auth/login
+Admin: admin@movietick.com / Admin@123456
+Customer: john.doe@movietick.com / User@123456
+
+Admin dashboard (signed in as admin): https://cine-pass-movie-ticket-booking.vercel.app/admin
+
+------swap between f1 and b1---------
+
+az appservice plan update --name cinepass-plan --resource-group cinepass-rg --sku B1
+
+az appservice plan update --name cinepass-plan --resource-group cinepass-rg --sku F1
