@@ -201,7 +201,6 @@ CinePass is deployed live on **Microsoft Azure** (backend + database) and **Verc
 | :--- | :--- | :--- |
 | [`backend-ci-cd.yml`](.github/workflows/backend-ci-cd.yml) | Push to `master` touching `backend/**`, or manual run | Restore → build → run xUnit tests → `dotnet publish` → sign in to Azure via OIDC → deploy to App Service |
 | [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | Push / PR touching `frontend/**` | `npm ci` → lint → type-check → production build (Vercel handles the actual deploy) |
-| [`keep-warm.yml`](.github/workflows/keep-warm.yml) | Every 10 minutes | Pings the live API so the free-tier app and database never go cold — recruiters get an instant response, not a 30s cold start |
 
 **Passwordless deploys with OIDC** — the backend workflow authenticates to Azure using OpenID Connect federation instead of a stored secret: GitHub proves its identity to Azure AD at runtime and receives a short-lived token, so there is no long-lived Azure credential in the repo or in GitHub Secrets to leak or rotate.
 
@@ -211,7 +210,7 @@ The Azure resources (resource group, App Service plan, Web App, SQL server + dat
 
 ### Free-tier trade-offs
 
-- The App Service free tier unloads idle apps after ~20 minutes; the keep-warm workflow above prevents that.
+- Idle apps unload after ~20 minutes and the free serverless database auto-pauses, so the first visit after a quiet period takes ~30-60s to wake up. There is deliberately no "keep-warm" pinger: the free database only gets ~55 hours of run time per month, and keeping it awake around the clock uses that up in about 2.5 days.
 - 60 CPU-minutes/day and 5 concurrent WebSocket connections — plenty for a demo, not for real traffic.
 - Stripe runs in **test mode** (use [Stripe's test cards](https://docs.stripe.com/testing)); no real payments are processed.
 
