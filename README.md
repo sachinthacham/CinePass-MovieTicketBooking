@@ -111,50 +111,117 @@ The parts of this codebase most worth pointing to in an interview:
 
 ## ⚙️ Getting Started
 
+Want to try it without installing anything? Use the [live demo](#-live-demo). To run it on your own machine:
+
 ### Prerequisites
 
-- **.NET 8 SDK**
-- **Node.js 20+**
-- **Docker Desktop** (for SQL Server, or the full containerized stack)
+- [**.NET 8 SDK**](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [**Node.js 20+**](https://nodejs.org/) (comes with npm)
+- [**Docker Desktop**](https://www.docker.com/products/docker-desktop/) — runs the SQL Server database (and the full stack, if you prefer)
+- [**Git**](https://git-scm.com/)
+- *Optional:* free [Stripe test-mode keys](https://dashboard.stripe.com/test/apikeys) — only needed to complete a card payment at checkout
 
-### 1 — Database
+```bash
+git clone https://github.com/sachinthacham/CinePass-MovieTicketBooking.git
+cd CinePass-MovieTicketBooking
+```
+
+### Option 1 — Run locally (three terminals, from the project root)
+
+**Terminal 1 — Database** (start Docker Desktop first)
 
 ```bash
 docker compose up sqlserver -d
 ```
 
-*(Or point `backend/MovieTicketBooking/MovieBooking.Api/appsettings.Development.json` at your own SQL Server instance.)*
+The first start takes ~30 seconds. Check it's healthy with `docker compose ps` (look for `healthy`). It listens on `localhost:1433`; the development connection string in `appsettings.Development.json` already matches it.
 
-### 2 — Backend API
+**Terminal 2 — Backend API**
 
 ```bash
 cd backend/MovieTicketBooking/MovieBooking.Api
-cp .env.example .env   # fill in Stripe keys + a JWT signing key
+cp .env.example .env        # Windows PowerShell: copy .env.example .env
+```
+
+Open the new `.env` file and set a signing key — **the API will not start without it**:
+
+```
+Jwt__Key=<any long random string, e.g. the output of: openssl rand -base64 64>
+```
+
+The `Stripe__*` values are only needed for payments and can stay as placeholders for browsing.
+
+```bash
 dotnet run
 ```
 
-EF Core migrations and seed data run automatically on startup. Swagger UI: `http://localhost:5000`.
+Wait for `Now listening on: http://127.0.0.1:5050`. Database tables and demo data (movies, theatres, showtimes, users) are created automatically on first start.
 
-### 3 — Frontend
+**Terminal 3 — Frontend**
 
 ```bash
 cd frontend
-npm install
+cp .env.example .env.local  # Windows PowerShell: copy .env.example .env.local
+npm install                 # first time only
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+For checkout, put your Stripe test publishable key in `.env.local` as `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. Leave `NEXT_PUBLIC_API_URL` as is — it already points at the local API.
 
-### 🐳 Or run the full stack in Docker
+### Local links
+
+| What | URL |
+| :--- | :--- |
+| 🎬 **The app (frontend)** | http://localhost:3000 |
+| 🔐 Sign in page | http://localhost:3000/auth/login |
+| 🛠️ Admin dashboard (sign in as admin first) | http://localhost:3000/admin |
+| ⚙️ Backend API | http://127.0.0.1:5050/api/v1 |
+| 📖 Swagger UI (interactive API docs) | http://127.0.0.1:5050 |
+| ✅ Quick API check (returns movie JSON) | http://127.0.0.1:5050/api/v1/movies |
+| 🗄️ SQL Server | `localhost,1433` — user `sa`, password `YourStrong@Pass123` (local dev only) |
+
+Sign in with the accounts under [Test Credentials](#-test-credentials).
+
+### Stop the project
+
+1. Press **Ctrl + C** in the frontend terminal, then in the backend terminal.
+2. Stop the database:
 
 ```bash
+docker compose stop sqlserver   # pause it — your data is kept
+docker compose down             # remove the container — data still survives in the Docker volume
+docker compose down -v          # remove the container AND wipe all data (a fresh re-seed next start)
+```
+
+To start again later, repeat the three terminals above (skip `npm install` and the `.env` copies).
+
+### Option 2 — Run everything in Docker (one command)
+
+Create the backend `.env` first (same as above — Docker Compose reads it), then:
+
+```bash
+cp backend/MovieTicketBooking/MovieBooking.Api/.env.example backend/MovieTicketBooking/MovieBooking.Api/.env
+# edit that file and set Jwt__Key, then:
 docker compose up --build -d
 ```
 
 | Service | URL |
 | :--- | :--- |
-| Frontend | `http://localhost:3000` |
-| API / Swagger | `http://localhost:5000` |
+| 🎬 App (frontend) | http://localhost:3000 |
+| ⚙️ Backend API | http://localhost:5000/api/v1 |
+| 📖 Swagger UI | http://localhost:5000 |
+
+Stop it with `docker compose down`. The first build takes a few minutes.
+
+### Troubleshooting
+
+| Problem | Fix |
+| :--- | :--- |
+| API crashes with *"JWT Key is not configured"* | Set `Jwt__Key` in `backend/MovieTicketBooking/MovieBooking.Api/.env`. |
+| API fails with a SQL *login failed* / *cannot connect* error | The database isn't ready yet — wait ~30s and check `docker compose ps` shows `healthy`, then re-run `dotnet run`. |
+| Frontend loads but movies are empty or requests fail | Make sure the API is running on **port 5050** (`http://127.0.0.1:5050/api/v1/movies` should return JSON) and that `NEXT_PUBLIC_API_URL` in `.env.local` matches. Restart `npm run dev` after editing `.env.local`. |
+| *Port already in use* | Something else is on 3000, 5050, 5000 or 1433 — stop it, or check what's holding the port with `netstat -ano`. The frontend must stay on port 3000 or 3001, the only origins the local API allows (CORS). |
+| Want a clean database | `docker compose down -v`, then start again — demo data is re-seeded automatically. |
 
 ---
 
